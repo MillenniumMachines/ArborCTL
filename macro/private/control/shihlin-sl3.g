@@ -17,13 +17,13 @@ var powerAddr   = 4123
 var errorAddr   = 4103
 
 ; Gather Motor Configuration from VFD if not already loaded
-if { global.arborCtlState[param.S][6] == null }
+if { global.arborCtlState[param.S][7] == null }
     ; 0 = Motor Rated Power, 1 = Motor Poles, 2 = Motor Rated Voltage,
     ; 3 = Motor Rated Frequency, 4 = Motor Rated Current, 5 = Motor Rotation Speed
     M261.1 P{param.C} A{param.A} F3 R{statusAddr} B6 V"motorConfig"
     G4 P1
 
-    set global.arborCtlState[param.S][6] = { var.motorConfig }
+    set global.arborCtlState[param.S][7] = { var.motorConfig }
 
 var shouldRun = { (spindles[param.S].state == "forward" || spindles[param.S].state == "reverse") && spindles[param.S].active > 0 }
 
@@ -126,4 +126,5 @@ set global.arborCtlState[param.S][4] = { var.commandChange }
 set global.arborCtlState[param.S][6] = { var.spindleState[1], var.spindleState[2], var.spindlePower[3], var.spindlePower[4] }
 
 ; Update spindle load
-set global.arborCtlState[param.S][5] = { var.spindlePower / (global.arborCtlState[param.S][6][0] * 1000) }
+; Spindle load is calculated as the current power divided by the rated power
+set global.arborCtlState[param.S][5] = { var.spindlePower / (global.arborCtlState[param.S][7][0] * 1000) }

@@ -36,6 +36,8 @@ if { var.wasStable && !var.isStable && !var.commandChange && var.jobRunning }
 var spindleLoad = { global.arborCtlState[param.S][5] }
 
 ; If spindle is running and stable, check for load
+; If load is higher than global.arborCtlMaxLoad, reduce the speed
+; factor by 5% and update the speed.
 if { var.vfdRunning && var.isStable && var.spindleLoad > global.arborCtlMaxLoad }
         var speedFactor = { move.speedFactor * 0.95 }
         echo { "ArborCtl: Spindle load is " ^ var.spindleLoad ^ "% - reducing speed to " ^ var.speedFactor * 100 ^ "%" }

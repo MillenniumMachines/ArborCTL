@@ -17,6 +17,7 @@ global arborCtlCfg = {{60}}
 ; CMD_CHANGE:  True if spindle has been commanded to change
 ; LOAD:        Current load on spindle, as a percentage
 ; MODEL_SPECIFIC: Model specific data
+; MOTOR_SPECIFIC: Motor Nameplate data (Voltage, Current, Power, Frequency, Poles) - DO NOT MODIFY
 
-;                                                     RUN,   DIR, STABLE, OLD_STABLE, CMD_CHANGE, LOAD, MODEL_SPECIFIC }
-global arborCtlState  = { vector(limits.spindles, { false, false,  false,      false,      false,    0,           null }) }
+;                                                     RUN,   DIR, STABLE, OLD_STABLE, CMD_CHANGE, LOAD, MODEL_SPECIFIC, MOTOR_SPECIFIC }
+global arborCtlState  = { vector(limits.spindles, { false, false,  false,      false,      false,    0,           null,           null }) }
