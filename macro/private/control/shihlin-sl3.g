@@ -62,7 +62,6 @@ if { var.spindleState == null || var.spindleErrors == null }
 ; b1: during forward rotation
 ; b0: running
 
-
 ; Extract status bits from spindleState
 var vfdRunning      = { (var.spindleState[0] - ((var.spindleState[0] / 2) * 2)) == 1 }
 var vfdForward      = { ((var.spindleState[0] / 2) * 2) != var.spindleState[0] }
@@ -74,9 +73,6 @@ if { var.spindlePower == null }
     set var.spindlePower = { var.spindleState[3] * var.spindleState[4] }
 else
     set var.spindlePower = { var.spindlePower[0] * 10 }
-
-; Calculate spindle load as a percentage of rated power (in watts)
-var spindleLoad = { var.spindlePower / (global.arborCtlState[param.S][6][0] * 1000) }
 
 ; Check for invalid spindle state and call emergency stop on the VFD
 if { (var.vfdRunning && !var.vfdForward && !var.vfdReverse) || (!var.vfdRunning && (var.vfdForward || var.vfdReverse)) }
@@ -126,8 +122,8 @@ set global.arborCtlState[param.S][2] = { var.vfdRunning && var.vfdSpeedReached }
 
 set global.arborCtlState[param.S][4] = { var.commandChange }
 
-; Update spindle load
-set global.arborCtlState[param.S][5] = { var.spindleLoad }
-
 ; Set model-specific data
 set global.arborCtlState[param.S][6] = { var.spindleState[1], var.spindleState[2], var.spindlePower[3], var.spindlePower[4] }
+
+; Update spindle load
+set global.arborCtlState[param.S][5] = { var.spindlePower / (global.arborCtlState[param.S][6][0] * 1000) }
