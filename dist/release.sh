@@ -21,8 +21,8 @@ find ${TMP_DIR}
 [[ -f "${ZIP_PATH}" ]] && rm "${ZIP_PATH}"
 
 cd "${TMP_DIR}"
-echo "Replacing %%ARBOR_VERSION%% with ${COMMIT_ID}..."
-sed -si -e "s/%%ARBOR_VERSION%%/${COMMIT_ID}/g" {sys/*.g}
+echo "Replacing %%ARBORCTL_VERSION%% with ${COMMIT_ID}..."
+sed -si -e "s/%%ARBORCTL_VERSION%%/${COMMIT_ID}/g" sys/*.g
 zip -x 'README.md' -r "${ZIP_PATH}" *
 cd "${WD}"
 rm -rf "${TMP_DIR}"
