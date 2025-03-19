@@ -16,7 +16,7 @@ if { !exists(param.S) }
 var motorConfigAddresses = {0x8F, 0x8D, 0x05, 0x8E, 0x90}
 
 ; Gather Motor Configuration from VFD if not already loaded
-if { global.arborCtlState[param.S][7] == null }
+if { global.arborState[param.S][7] == null }
     var motorConfig = { vector(6, null) }
 
     ; Read each motor configuration value
@@ -30,8 +30,8 @@ if { global.arborCtlState[param.S][7] == null }
     ; Motor power can not be read from the VFD, so we calculate it
     set var.motorConfig[0] = { var.motorConfig[2] * var.motorConfig[3] }
 
-    set global.arborCtlState[param.S][6] = { vector(6, null) }
-    set global.arborCtlState[param.S][7] = { var.motorConfig }
+    set global.arborState[param.S][6] = { vector(6, null) }
+    set global.arborState[param.S][7] = { var.motorConfig }
 
 var shouldRun = { (spindles[param.S].state == "forward" || spindles[param.S].state == "reverse") && spindles[param.S].active > 0 }
 
@@ -119,20 +119,20 @@ else
         set var.commandChange = true
 
 ; Update global state
-set global.arborCtlState[param.S][0] = { var.vfdRunning }
-set global.arborCtlState[param.S][1] = { var.vfdRunning && var.vfdReverse }
+set global.arborState[param.S][0] = { var.vfdRunning }
+set global.arborState[param.S][1] = { var.vfdRunning && var.vfdReverse }
 
 ; Update old stable value
-set global.arborCtlState[param.S][3] = { global.arborCtlState[param.S][2] }
+set global.arborState[param.S][3] = { global.arborState[param.S][2] }
 
 ; Write new stable value
-set global.arborCtlState[param.S][2] = { var.vfdRunning && var.vfdSpeedReached }
+set global.arborState[param.S][2] = { var.vfdRunning && var.vfdSpeedReached }
 
-set global.arborCtlState[param.S][4] = { var.commandChange }
+set global.arborState[param.S][4] = { var.commandChange }
 
 ; Set model-specific data
-set global.arborCtlState[param.S][6] = { var.spindleState[1], var.spindleState[2], var.spindlePower[3], var.spindlePower[4] }
+set global.arborState[param.S][6] = { var.spindleState[1], var.spindleState[2], var.spindlePower[3], var.spindlePower[4] }
 
 ; Update spindle load
 ; Spindle load is calculated as the current power divided by the rated power
-set global.arborCtlState[param.S][5] = { var.spindlePower / (global.arborCtlState[param.S][7][0] * 1000) }
+set global.arborState[param.S][5] = { var.spindlePower / (global.arborState[param.S][7][0] * 1000) }

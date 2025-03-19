@@ -9,12 +9,13 @@ COMMIT_ID=$(git describe --tags --exclude "release-*" --always --dirty)
 echo "Building release ${ZIP_NAME} for ${COMMIT_ID}..."
 
 # Make stub folder-structure
-mkdir -p ${TMP_DIR}/{sys,macros,sys/arborctl}
+mkdir -p ${TMP_DIR}/{sys,macros,macros/ArborCtl,sys/arborctl}
 
 # Copy files to correct location in temp dir
 ${SYNC_CMD} sys/* ${TMP_DIR}/sys/
-${SYNC_CMD} macro/public/* ${TMP_DIR}/macros/ArborCTL
+${SYNC_CMD} macro/public/* ${TMP_DIR}/macros/ArborCtl
 ${SYNC_CMD} macro/private/* ${TMP_DIR}/sys/arborctl
+${SYNC_CMD} macro/gcodes/* ${TMP_DIR}/sys/
 
 find ${TMP_DIR}
 
