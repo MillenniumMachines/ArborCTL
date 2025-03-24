@@ -1,6 +1,6 @@
 ; huanyang-hy02d223b.g - Huanyang HY02D223B VFD implementation
 ; This file implements specific commands for the Huanyang HY02D223B VFD
-; This VFD is NOT Modbus compatible, so we have to use M260.4 commands
+; This VFD is NOT Modbus compatible, so we have to use custom protocol
 ; with the Huanyang VFD protocol to control it
 
 if { !exists(param.A) }
@@ -12,80 +12,177 @@ if { !exists(param.C) }
 if { !exists(param.S) }
     abort { "ArborCtl: No spindle specified!" }
 
-; Motor Poles, Motor Rated Voltage, Motor Rated Frequency, Motor Rated Current, Motor Rotation Speed
-var motorConfigAddresses = {0x8F, 0x8D, 0x05, 0x8E, 0x90}
+; Initialize motor data if needed
+if { global.arborState[param.S][0] == null }
+    set global.arborState[param.S][0] = { vector(10, null) }
 
-; Gather Motor Configuration from VFD if not already loaded
-if { global.arborState[param.S][7] == null }
-    var motorConfig = { vector(6, null) }
+var cmdWait = 50  ; Wait time between commands
 
-    ; Read each motor configuration value
-    while { iterations < #var.motorConfigAddresses }
-        M260.4 P{param.C} A{param.A} B{{0x01, 0x03, var.motorConfigAddresses[iterations], 0x00, 0x00}} R5 V"rawMotorConfig"
-        G4 P1
+; Parameter codes for Huanyang protocol as constants
+var REG_RUN_CMD = 0x00          ; PD000: Run command register
+var REG_FREQ_SETTING = 0x01     ; PD001: Operating frequency setting
+var REG_DIR_SETTING = 0x02      ; PD002: Operating direction setting
+var REG_MAIN_VISUAL = 0x03      ; PD003: Main visualization parameter
+var REG_AUX_VISUAL = 0x04       ; PD004: Auxiliary visualization parameter
+var REG_MAX_FREQ = 0x05         ; PD005: Max operating frequency
+var REG_MIN_FREQ = 0x06         ; PD006: Min operating frequency
+var REG_MAX_VOLTAGE = 0x08      ; PD008: Max voltage
+var REG_MIN_VOLTAGE = 0x09      ; PD009: Min voltage
+var REG_LOWER_FREQ_LIMIT = 0x0A ; PD010: Lower frequency limit
+var REG_ACCEL_TIME = 0x0E       ; PD014: Acceleration time
+var REG_DECEL_TIME = 0x0F       ; PD015: Deceleration time
+var REG_FWD_REV_DEADTIME = 0x17 ; PD023: Forward/Reverse switching dead time
+var REG_MOTOR_VOLTAGE = 0x8D    ; PD141: Rated motor voltage
+var REG_MOTOR_CURRENT = 0x8E    ; PD142: Rated motor current
+var REG_MOTOR_POLES = 0x8F      ; PD143: Number of motor poles
+var REG_MOTOR_SPEED = 0x90      ; PD144: Rated rotation speed
 
-        ; Strip out the value from the raw data
-        set var.motorConfig[iterations+1] = { var.rawMotorConfig[3] * 256 + var.rawMotorConfig[4] }
+; Initialize VFD Status objects if not already done
+if { global.arborVFDStatus[param.S] == null }
+    set global.arborVFDStatus[param.S] = { vector(5, 0) }
+    set global.arborVFDStatus[param.S][0] = false
+    set global.arborVFDStatus[param.S][1] = 0
+    set global.arborVFDStatus[param.S][2] = 0
+    set global.arborVFDStatus[param.S][3] = 0
+    set global.arborVFDStatus[param.S][4] = true
 
-    ; Motor power can not be read from the VFD, so we calculate it
-    set var.motorConfig[0] = { var.motorConfig[2] * var.motorConfig[3] }
+; Initialize VFD Power objects if not already done
+if { global.arborVFDPower[param.S] == null }
+    set global.arborVFDPower[param.S] = { vector(2, 0) }
+    set global.arborVFDPower[param.S][0] = 0
+    set global.arborVFDPower[param.S][1] = 0
 
-    set global.arborState[param.S][6] = { vector(6, null) }
-    set global.arborState[param.S][7] = { var.motorConfig }
+; Always gather Motor Configuration from VFD if not already loaded
+if { global.arborState[param.S][3] == null }
+    ; Query the VFD for motor configuration
+    var rawMotorPoles = 0
+    var rawMotorVoltage = 0
+    var rawMotorCurrent = 0
+    var rawMotorSpeed = 0
+    var rawMaxFreq = 0
+    var rawMinFreq = 0
 
+    ; Read number of motor poles (PD143)
+    M260.4 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MOTOR_POLES, 0x00, 0x01}} R5
+    G4 P{var.cmdWait}
+    M261.4 V"rawMotorPoles"
+
+    ; Read rated motor voltage (PD141)
+    M260.4 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MOTOR_VOLTAGE, 0x00, 0x01}} R5
+    G4 P{var.cmdWait}
+    M261.4 V"rawMotorVoltage"
+
+    ; Read rated motor current (PD142)
+    M260.4 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MOTOR_CURRENT, 0x00, 0x01}} R5
+    G4 P{var.cmdWait}
+    M261.4 V"rawMotorCurrent"
+
+    ; Read rated motor speed (PD144)
+    M260.4 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MOTOR_SPEED, 0x00, 0x01}} R5
+    G4 P{var.cmdWait}
+    M261.4 V"rawMotorSpeed"
+
+    ; Read max frequency (PD005)
+    M260.4 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MAX_FREQ, 0x00, 0x01}} R5
+    G4 P{var.cmdWait}
+    M261.4 V"rawMaxFreq"
+
+    ; Read min frequency (PD006)
+    M260.4 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MIN_FREQ, 0x00, 0x01}} R5
+    G4 P{var.cmdWait}
+    M261.4 V"rawMinFreq"
+
+    ; Check if we received all the necessary data
+    if { var.rawMotorPoles == 0 || var.rawMotorVoltage == 0 || var.rawMotorCurrent == 0 ||
+         var.rawMotorSpeed == 0 || var.rawMaxFreq == 0 || var.rawMinFreq == 0 }
+        echo { "ArborCtl: Failed to read motor configuration from Huanyang VFD!" }
+        M99
+
+    ; Parse values from the responses
+    var motorPoles = var.rawMotorPoles[3]
+    var motorVoltage = var.rawMotorVoltage[3]
+    var motorCurrent = { var.rawMotorCurrent[3] * 0.1 }  ; Current is in 0.1A units
+    var motorSpeed = var.rawMotorSpeed[3]
+    var maxFreq = { var.rawMaxFreq[3] * 0.1 }            ; Frequency is in 0.1Hz units
+    var minFreq = { var.rawMinFreq[3] * 0.1 }            ; Frequency is in 0.1Hz units
+
+    ; Calculate rated frequency based on speed and poles
+    ; f = (n * p) / 120 where n is speed in RPM and p is number of poles
+    var motorFreq = { (var.motorSpeed * var.motorPoles) / 120 }
+
+    ; Calculate rated power (P = √3 × V × I × PF), assuming PF of 0.8
+    var powerFactor = 0.8
+    var motorPower = { (sqrt(3) * var.motorVoltage * var.motorCurrent * var.powerFactor) / 1000 }  ; in kW
+
+    ; Create a motor configuration vector [power, poles, voltage, frequency, current, speed]
+    var motorCfg = { vector(6, 0) }
+    set var.motorCfg[0] = var.motorPower  ; Rated power in kW
+    set var.motorCfg[1] = var.motorPoles  ; Number of poles
+    set var.motorCfg[2] = var.motorVoltage ; Rated voltage
+    set var.motorCfg[3] = var.motorFreq   ; Rated frequency
+    set var.motorCfg[4] = var.motorCurrent ; Rated current
+    set var.motorCfg[5] = var.motorSpeed  ; Rated speed
+
+    ; Create a frequency conversion vector for consistency with Shihlin
+    var freqConv = { vector(1, 1.0) }
+
+    ; Store motor config and frequency conversion in arborState[S][0]
+    set global.arborState[param.S][0] = { var.motorCfg, var.freqConv }
+
+    ; Store frequency limits
+    set global.arborState[param.S][3] = { vector(2, 0) }
+    set global.arborState[param.S][3][0] = var.minFreq           ; Min frequency
+    set global.arborState[param.S][3][1] = var.maxFreq           ; Max frequency
+
+    echo { "ArborCTL Huanyang HY02D223B Configuration: " }
+    echo { "  Power=" ^ var.motorCfg[0] ^ "kW, Poles=" ^ var.motorCfg[1] ^ ", Voltage=" ^ var.motorCfg[2] ^ "V" }
+    echo { "  Frequency=" ^ var.motorCfg[3] ^ "Hz, Current=" ^ var.motorCfg[4] ^ "A, Speed=" ^ var.motorCfg[5] ^ "RPM" }
+    echo { "  Max Freq=" ^ var.maxFreq ^ "Hz, Min Freq=" ^ var.minFreq ^ "Hz" }
+
+; Determine what the spindle should be doing based on RRF's state
 var shouldRun = { (spindles[param.S].state == "forward" || spindles[param.S].state == "reverse") && spindles[param.S].active > 0 }
 
-; Read status bits by writing an empty control status request that does
-; not modify the direction configured.
-M260.4 P{param.C} A{param.A} B{0x03, (global.arbotCtlState[param.S][6][1] == true ? 0x10: 0x00)} R5 V"spindleState"
+; Read current VFD status
+var rawStatus = 0
+var rawFreq = 0
+var rawCurrent = 0
 
-; Give VFD time to process
-G4 P1
+; Read run status (PD000)
+M260.4 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_RUN_CMD, 0x00, 0x01}} R5
+G4 P{var.cmdWait}
+M261.4 V"rawStatus"
 
-; Read output power
-M261.1 P{global.modbusChannel} A{global.modbusAddress} F3 R{var.powerAddr} B1 V"spindlePower"
+; Read current frequency (PD001)
+M260.4 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_FREQ_SETTING, 0x00, 0x01}} R5
+G4 P{var.cmdWait}
+M261.4 V"rawFreq"
 
-G4 P1
-
-; Read any error codes
-M261.1 P{global.modbusChannel} A{global.modbusAddress} F3 R{var.errorAddr} B2 V"spindleErrors"
+; Read output current (PD003 - Main display parameter set to current)
+M260.4 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MAIN_VISUAL, 0x00, 0x01}} R5
+G4 P{var.cmdWait}
+M261.4 V"rawCurrent"
 
 ; Make sure we have all the data we need
-if { var.spindleState == null || var.spindleErrors == null }
+if { var.rawStatus == 0 || var.rawFreq == 0 || var.rawCurrent == 0 }
+    echo { "ArborCtl: Failed to read spindle state from Huanyang VFD!" }
+
+    ; Try to stop the spindle if we can't read its state - safety measure
+    M260.4 P{param.C} A{param.A} B{{0x01, 0x06, var.REG_RUN_CMD, 0x00, 0x01}} R6
+    G4 P{var.cmdWait}
     M5
-    abort { "ArborCtl: Failed to read spindle state!" }
+    M99
 
-; spindleState[0] is a bitmask of the following values:
-; b15:during tuning
-; b14: during inverter reset
-; b13, b12: Reserved
-; b11: inverter E0 status
-; b10~8: Reserved
-; b7:alarm occurred
-; b6:frequency detect
-; b5:Parameters reset end
-; b4: overload
-; b3: frequency arrive
-; b2: during reverse rotation
-; b1: during forward rotation
-; b0: running
+; Parse values from the responses
+var vfdRunning = { (var.rawStatus[3] & 0x01) == 1 }
+var vfdForward = { (var.rawStatus[3] & 0x02) == 0 }  ; Direction bit is 0 for forward
+var vfdReverse = { !var.vfdForward && var.vfdRunning }
+var currentFreq = { (var.rawFreq[3] * 256 + var.rawFreq[4]) / 100.0 }  ; Convert from 0.01Hz units
+var outputCurrent = { var.rawCurrent[3] * 0.1 }  ; Current in 0.1A units
 
-; Extract status bits from spindleState
-var vfdRunning      = { (var.spindleState[0] - ((var.spindleState[0] / 2) * 2)) == 1 }
-var vfdForward      = { ((var.spindleState[0] / 2) * 2) != var.spindleState[0] }
-var vfdReverse      = { ((var.spindleState[0] / 4) * 4) != var.spindleState[0] }
-var vfdSpeedReached = { (var.spindleState[0] - ((var.spindleState[0] / 8) * 8)) == 1 }
-var vfdInputFreq    = { global.spindleState[1] }
-
-if { var.spindlePower == null }
-    set var.spindlePower = { var.spindleState[3] * var.spindleState[4] }
-else
-    set var.spindlePower = { var.spindlePower[0] * 10 }
-
-; Check for invalid spindle state and call emergency stop on the VFD
-if { (var.vfdRunning && !var.vfdForward && !var.vfdReverse) || (!var.vfdRunning && (var.vfdForward || var.vfdReverse)) }
-    M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B128
-    G4 P1
+; Check for invalid spindle state
+if { (var.vfdRunning && !var.vfdForward && !var.vfdReverse) }
+    M260.4 P{param.C} A{param.A} B{{0x01, 0x06, var.REG_RUN_CMD, 0x00, 0x01}} R6
+    G4 P{var.cmdWait}
     echo { "ArborCtl: Invalid spindle state detected - emergency VFD stop issued!" }
     M112
 
@@ -93,46 +190,103 @@ var commandChange = false
 
 ; Stop spindle as early as possible if it should not be running
 if { !var.shouldRun && var.vfdRunning }
-    ; Stop spindle, set frequency to 0
-    M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B0
-    G4 P1
-    M260.1 P{param.C} A{param.A} F6 R{var.freqAddr} B0
-    G4 P1
+    echo { "ArborCtl: Stopping spindle " ^ param.S }
+    ; Stop spindle
+    M260.4 P{param.C} A{param.A} B{{0x01, 0x06, var.REG_RUN_CMD, 0x00, 0x01}} R6
+    G4 P{var.cmdWait}
+
+    ; Set frequency to 0
+    M260.4 P{param.C} A{param.A} B{{0x01, 0x06, var.REG_FREQ_SETTING, 0x00, 0x00}} R6
+    G4 P{var.cmdWait}
 
     set var.commandChange = true
-
 else
-    ; Set input frequency if it doesn't match the RRF value
-    if { global.spindleState[1] != spindles[param.S].active }
-        M260.1 P{param.C} A{param.A} F6 R{var.freqAddr} B{spindles[param.S].active}
-        G4 P1
+    ; Calculate the frequency to set based on the rpm requested
+    var numPoles = global.arborState[param.S][0][0][1]  ; Get motor poles from stored config
+    var maxFreq = global.arborState[param.S][3][1]
+    var minFreq = global.arborState[param.S][3][0]
+
+    ; RPM = 120 x f / poles
+    ; f = RPM x poles / 120
+    var newFreq = { min(var.maxFreq, max(var.minFreq, (spindles[param.S].active * var.numPoles) / 120)) }
+
+    ; Huanyang protocol expects frequency in 0.01Hz units
+    var scaledFreq = { floor(var.newFreq * 100) }
+    var freqHigh = { floor(var.scaledFreq / 256) }
+    var freqLow = { var.scaledFreq % 256 }
+
+    ; Check if current frequency doesn't match the requested one
+    var currentScaledFreq = { floor(var.currentFreq * 100) }
+
+    if { var.currentScaledFreq != var.scaledFreq }
+        echo { "ArborCtl: Setting spindle " ^ param.S ^ " frequency to " ^ var.newFreq ^ " Hz" }
+        M260.4 P{param.C} A{param.A} B{{0x01, 0x06, var.REG_FREQ_SETTING, var.freqHigh, var.freqLow}} R6
+        G4 P{var.cmdWait}
         set var.commandChange = true
 
-    ; Set spindle direction forward if it is not running forward
-    if { spindles[0].state == "forward" && !var.vfdForward }
-        M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B2
-        set var.commandChange = true
+    ; Set spindle direction and start running if needed
+    if { spindles[param.S].state == "forward" }
+        ; First check if we need to change direction
+        if { !var.vfdForward }
+            echo { "ArborCtl: Setting spindle " ^ param.S ^ " direction to forward" }
+            M260.4 P{param.C} A{param.A} B{{0x01, 0x06, var.REG_DIR_SETTING, 0x00, 0x00}} R6
+            G4 P{var.cmdWait}
+            set var.commandChange = true
 
-    ; Set spindle direction reverse if it is not running in reverse
-    elif { spindles[0].state == "reverse" && !var.vfdReverse }
-        M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B4
-        set var.commandChange = true
+        ; Then check if we need to start the spindle
+        if { !var.vfdRunning }
+            echo { "ArborCtl: Starting spindle " ^ param.S ^ " in forward direction" }
+            M260.4 P{param.C} A{param.A} B{{0x01, 0x06, var.REG_RUN_CMD, 0x00, 0x02}} R6
+            G4 P{var.cmdWait}
+            set var.commandChange = true
 
-; Update global state
-set global.arborState[param.S][0] = { var.vfdRunning }
-set global.arborState[param.S][1] = { var.vfdRunning && var.vfdReverse }
+    elif { spindles[param.S].state == "reverse" }
+        ; First check if we need to change direction
+        if { var.vfdForward || !var.vfdRunning }
+            echo { "ArborCtl: Setting spindle " ^ param.S ^ " direction to reverse" }
+            M260.4 P{param.C} A{param.A} B{{0x01, 0x06, var.REG_DIR_SETTING, 0x00, 0x01}} R6
+            G4 P{var.cmdWait}
+            set var.commandChange = true
 
-; Update old stable value
-set global.arborState[param.S][3] = { global.arborState[param.S][2] }
+        ; Then check if we need to start the spindle
+        if { !var.vfdRunning }
+            echo { "ArborCtl: Starting spindle " ^ param.S ^ " in reverse direction" }
+            M260.4 P{param.C} A{param.A} B{{0x01, 0x06, var.REG_RUN_CMD, 0x00, 0x02}} R6
+            G4 P{var.cmdWait}
+            set var.commandChange = true
 
-; Write new stable value
-set global.arborState[param.S][2] = { var.vfdRunning && var.vfdSpeedReached }
+; Calculate current RPM from output frequency
+var currentRPM = { var.currentFreq * 60 * 2 / var.numPoles }
 
-set global.arborState[param.S][4] = { var.commandChange }
+; Check if frequency is stable (within 5% of target)
+var targetFreq = { var.shouldRun ? var.newFreq : 0 }
+var freqDiff = { abs(var.currentFreq - var.targetFreq) }
+var freqStable = { var.freqDiff < (var.targetFreq * 0.05) || var.freqDiff < 0.5 }
 
-; Set model-specific data
-set global.arborState[param.S][6] = { var.spindleState[1], var.spindleState[2], var.spindlePower[3], var.spindlePower[4] }
+; Save previous stability flag for stability change detection
+set global.arborState[param.S][2] = { global.arborVFDStatus[param.S] != null ? global.arborVFDStatus[param.S][4] : false }
 
-; Update spindle load
-; Spindle load is calculated as the current power divided by the rated power
-set global.arborState[param.S][5] = { var.spindlePower / (global.arborState[param.S][7][0] * 1000) }
+; Update internal state
+set global.arborState[param.S][1] = var.commandChange
+
+; Update public status variables
+set global.arborVFDStatus[param.S][0] = var.vfdRunning
+set global.arborVFDStatus[param.S][1] = { var.vfdRunning ? (var.vfdReverse ? -1 : 1) : 0 }
+set global.arborVFDStatus[param.S][2] = var.currentFreq
+set global.arborVFDStatus[param.S][3] = var.currentRPM
+set global.arborVFDStatus[param.S][4] = var.freqStable
+
+; Calculate and update power information
+if { global.arborState[param.S][0] != null }
+    ; Calculate power in watts (P = √3 × V × I × PF)
+    var powerFactor = 0.8  ; Assumed power factor
+    var ratedVoltage = global.arborState[param.S][0][0][2]  ; Get voltage from stored config
+    var outputPower = { sqrt(3) * var.ratedVoltage * var.outputCurrent * var.powerFactor }
+
+    ; Calculate load percentage
+    var ratedPower = { global.arborState[param.S][0][0][0] * 1000 }  ; Convert kW to W
+    var loadPercentage = { min((var.outputPower / var.ratedPower) * 100, 100) }
+
+    ; Update power information
+    set global.arborVFDPower[param.S][0] = var.outputPower
+    set global.arborVFDPower[param.S][1] = var.loadPercentage
