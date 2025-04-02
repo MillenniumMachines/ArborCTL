@@ -7,7 +7,7 @@ if { !exists(global.sl3SpecialParams) }
 
 ; Pre-allocate the configuration parameters vector - increased to handle split params
 if { !exists(global.sl3ConfigParams) }
-    global sl3ConfigParams = { vector(16, null) }
+    global sl3ConfigParams = { vector(17, null) }
 
 ; ========== CU MODE SETTINGS (FIRST) ==========
 ; P.79/0016 - Operation mode selection: 0 (CU mode)
@@ -34,53 +34,55 @@ set global.sl3ConfigParams[3] = { {10024, {1,}} }
 ; P.307/05-06 - Motor rated rotation speed (RPM)
 set global.sl3ConfigParams[4] = { {10501, {ceil(param.W * 100), param.U, param.V, ceil(param.F * 100), ceil(param.I * 100), ceil(param.R/10)}} }
 
-; ========== FREQUENCY PARAMETERS (CONSECUTIVE REGISTERS) ==========
+; ========== FREQUENCY PARAMETERS ==========
+; P.3/01-03 - Base frequency: 400.00Hz
+set global.sl3ConfigParams[5] = { {10103, {40000,}} }
+
 ; P.1/01-00 - Maximum frequency: 400.00Hz
 ; P.2/01-01 - Minimum frequency: 3.33Hz
 ; P.18/01-02 - High-speed maximum frequency: 400.00Hz
-set global.sl3ConfigParams[5] = { {10100, {40000, 333, 40000}} }
+set global.sl3ConfigParams[6] = { {10102, {40000,}} }
+set global.sl3ConfigParams[7] = { {10100, {40000, 333}} }
 
-; P.3/01-03 - Base frequency: 400.00Hz
-set global.sl3ConfigParams[6] = { {10103, {40000,}} }
 
 ; ========== OPERATION SETTINGS (CONSECUTIVE REGISTERS) ==========
 ; P.20/01-09 - Acc/Dec reference frequency: 400.00Hz
 ; P.0/01-10 - Torque boost: 5.0%
 ; P.13/01-11 - Starting frequency: 3.33Hz
 ; P.14/01-12 - Load pattern selection: 1
-set global.sl3ConfigParams[7] = { {10109, {40000, 50, 333, 1}} }
+set global.sl3ConfigParams[8] = { {10109, {40000, 50, 333, 1}} }
 
 ; P.29/01-05 - Acceleration/deceleration curve selection: 1
 ; P.4/01-06 - Acceleration time: 2.5s
 ; P.5/01-07 - Deceleration time: 2.5s
-set global.sl3ConfigParams[8] = { {10105, {1, 250, 250}} }
+set global.sl3ConfigParams[9] = { {10105, {1, 250, 250}} }
 
 ; P.28/01-15 - Output frequency filter time: 1
-set global.sl3ConfigParams[9] = { {10115, {1,}} }
+set global.sl3ConfigParams[10] = { {10115, {1,}} }
 
 ; P.10/10-00 - DC Brake Operating Frequency: 120Hz
 ; P.11/10-01 - DC Brake Time: 1.0s
 ; P.12/10-02 - DC Brake Operating Voltage Percent
-set global.sl3ConfigParams[10] = { {11000, {12000, 10, 300}} }
+set global.sl3ConfigParams[11] = { {11000, {12000, 10, 300}} }
 
 ; ========== CONTROL SETTINGS ==========
 ; P.161/00-07 - Multi-Function display: 5 (Output current)
-set global.sl3ConfigParams[11] = { {10007, {5,}} }
+set global.sl3ConfigParams[12] = { {10007, {5,}} }
 
 ; ========== COMMUNICATION SETTINGS (CONSECUTIVE REGISTERS) ==========
 ; P.52/07-08 - Number of communication retries: 1
 ; P.53/07-09 - Communication check time interval: 1.0s (in 0.1s units)
 ; P.153/07-10 - Communication error handling: 0 (alarm and stop)
-set global.sl3ConfigParams[12] = { {10708, {1, 10, 0}} }
+set global.sl3ConfigParams[13] = { {10708, {1, 10, 0}} }
 
 ; ========== ALARM SETTINGS ==========
 ; P.288/06-40 - Alarm code query: 12
-set global.sl3ConfigParams[13] = { {10640, {12,}} }
+set global.sl3ConfigParams[14] = { {10640, {12,}} }
 
 ; ========== FINAL SETTINGS ==========
 ; P.79/0016 - Operation mode selection: 0 (CU mode)
-set global.sl3ConfigParams[14] = { {10016, {3,}} }
+set global.sl3ConfigParams[15] = { {10016, {3,}} }
 
 ; P.34/07-11 - EEPROM write selection: 1 (disable writes to persist to EEPROM)
 ; Note: This must be set last to ensure all subsequent parameter changes are not persisted
-set global.sl3ConfigParams[15] = { {10711, {1,}} }
+set global.sl3ConfigParams[16] = { {10711, {1,}} }

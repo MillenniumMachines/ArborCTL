@@ -122,6 +122,7 @@ while { iterations < #global.sl3ConfigParams }
 
     ; Write batch of parameters using Modbus command - pass values vector directly to B parameter
     while { iterations < #var.values }
+        echo { "ArborCtl: Shihlin-SL3 - Writing parameter " ^ (iterations + 1) ^ ": " ^ var.values[iterations] }
         M260.1 P{param.C} A{param.A} F6 R{var.startAddr + iterations} B{var.values[iterations]}
         G4 P{var.waitTime}
 

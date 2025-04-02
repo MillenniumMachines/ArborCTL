@@ -134,12 +134,6 @@ if { result == -1 }
 
 if { input == 0 }
 
-    ; Ask if user wants to reset VFD to factory defaults first
-    M291 P"Would you like to reset the VFD to factory defaults before configuring?<br/><br/><b>WARNING:</b> This will erase ALL existing VFD settings!" R"ArborCtl: Configuration Wizard" S4 T0 K{"Yes", "No"} F1 J2
-    if { result == -1 }
-        abort { "ArborCtl: Operator aborted configuration wizard!" }
-    var resetVFD = { input == 0 }
-
     var configFile = { "arborctl/config/" ^ var.wizVFDType ^ ".g" }
     ; Configure the VFD - the VFD-specific file will handle both manual configuration guidance and automated settings
     M98 P{var.configFile} B{var.wizBaudRate} C{var.wizChannel} A{var.wizVFDAddress} S{var.wizSpindleID} W{var.wizMotorPower} U{var.wizMotorPoles} V{var.wizMotorVoltage} F{var.wizMotorFrequency} I{var.wizMotorCurrent} R{var.wizMotorRotationSpeed}
@@ -160,22 +154,7 @@ echo >>{var.wizUVF} ""
 
 ; VFD Configuration
 echo >>{var.wizUVF} "; VFD Configuration"
-echo >>{var.wizUVF} {"set global.arborVFDConfig[" ^ var.wizSpindleID ^ "] = "{"" ^ var.wizVFDType ^ """, " ^ var.wizChannel ^ ", " ^ var.wizVFDAddress ^ "}"}
+echo >>{var.wizUVF} {"set global.arborVFDConfig[" ^ var.wizSpindleID ^ "] = {""" ^ var.wizVFDType ^ """, " ^ var.wizChannel ^ ", " ^ var.wizVFDAddress ^ "} ; VFD configuration"}
 echo >>{var.wizUVF} ""
 
 M999
-
-; Remind users to add ArborCtL to config.g
-;M291 P"ArborCtl configuration complete. We will now try to test the spindle." R"ArborCtl: Configuration Wizard" S2 T0 J2
-;if { result == -1 }
-;    abort { "ArborCtl: Operator aborted configuration wizard!" }
-
-; Test the spindle
-
-;M291 P{"Start <b>Spindle " ^ var.wizSpindleID ^ "</b>?<br/><b>CAUTION</b>: Step away from the machine and remove any loose items before starting!"} R"ArborCtl: Configuration Wizard" S4 T0 K{"Yes","No"} F1
-;if { input != 0 }
-;    abort { "ArborCtl: Operator aborted configuration wizard!" }
-;M291 P"Starting spindle..." R"ArborCtl: Configuration Wizard" S2 T0 J2
-;M98 P{var.wizUVF}
-
-;M999

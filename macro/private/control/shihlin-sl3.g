@@ -37,7 +37,7 @@ if { global.arborState[param.S][0] == null }
         echo { "Unable to load necessary data from VFD for spindle control!"}
         M99
 
-    set var.motorCfg[0]      = { var.motorCfg[0] * 10 }
+    set var.motorCfg[0]      = { var.motorCfg[0] * 10 * 0.75 } ; Cos phi = 0.75
     set var.motorCfg[3]      = { var.motorCfg[3] / 100 }
     set var.motorCfg[4]      = { var.motorCfg[4] / 100 }
     set var.motorCfg[5]      = { var.motorCfg[5] * 10 }
@@ -120,7 +120,7 @@ else
     ; Calculate the frequency to set based on the rpm requested,
     ; the max and min frequencies, the number of poles
     ; and the conversion factor.
-    var numPoles   = { global.arborMotorPoles[param.S] }
+    var numPoles   = { global.arborState[param.S][0][0][1] }
     var convFactor = { global.arborState[param.S][0][1][0] }
     var maxFreq    = { global.arborState[param.S][3][0] }
     var minFreq    = { global.arborState[param.S][3][1] }
@@ -157,7 +157,7 @@ else
 
 ; Calculate current RPM from output frequency
 var currentFrequency = { var.vfdOutputFreq * 0.01 } ; Convert to Hz
-var currentRPM       = { var.currentFrequency * 60 / (global.arborMotorSpec[param.S][1] / 2) }
+var currentRPM       = { var.currentFrequency * 60 / (global.arborState[param.S][0][0][1] / 2) }
 var isStable         = { var.vfdRunning && var.vfdSpeedReached }
 
 ; Save previous stability flag for stability change detection
@@ -186,5 +186,5 @@ set global.arborVFDPower[param.S][0] = { var.spindlePower }
 
 ; Calculate and update load percentage if motor power is known
 if { global.arborMotorSpec[param.S] != null }
-    var loadPercent = { var.spindlePower / (global.arborMotorSpec[param.S][0] * 1000) * 100 }
+    var loadPercent = { var.spindlePower / (global.arborState[param.S][0][0][0] * 1000) * 100 }
     set global.arborVFDPower[param.S][1] = { var.loadPercent }
