@@ -63,21 +63,31 @@ if { var.wizVFDAddress == null || var.wizReset }
     set var.wizVFDAddress = { input }
 
 ; Get spindle ID
+; Look up configured spindles. If only one spindle is configured, use that one.
+; If multiple spindles are configured, ask the user to select one.
 if { var.wizSpindleID == null || var.wizReset }
-    M291 P"Which spindle ID would you like to assign to this VFD?<br/><br/>This is the spindle number you'll use with M3/M4/M5 commands." R"ArborCtl: Configuration Wizard" S5 T0 L0 H10 F0 J2
-    if { result == -1 }
-        abort { "ArborCtl: Operator aborted configuration wizard!" }
-    set var.wizSpindleID = { input }
+    while { iterations < limits.spindles }
+
+        if { spindles[iterations] != null && spindles[iterations].state != "unconfigured" }
+            M291 P{"<b>Spindle " ^ iterations ^ "</b> is configured.<br/><br/>Do you want to assign this spindle to the VFD?"} R"ArborCtl: Configuration Wizard" S4 T0 K{"Yes", "No"} F0 J2
+            if { result == -1 }
+                abort { "ArborCtl: Operator aborted configuration wizard!" }
+            if { input == 0 }
+                set var.wizSpindleID = { iterations }
+                break
+
+    if { var.wizSpindleID == null }
+        abort { "ArborCtl: No spindle selected! You must bind a configured RRF spindle to this VFD." }
 
 ; Get motor parameters first so we can pass them to the VFD configuration file
 if { var.wizMotorPower == null || var.wizReset }
-    M291 P"What is the rated power of your motor?<br/><br/>Enter the value in kW." R"ArborCtl: Configuration Wizard" S6 T0 L0 H100 F2.2 J2
+    M291 P"What is the rated power of your motor?<br/><br/>Enter the value in kW." R"ArborCtl: Configuration Wizard" S6 T0 L0 H100 F1.5 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizMotorPower = { input }
 
 if { var.wizMotorPoles == null || var.wizReset }
-    M291 P"How many poles does your motor have?<br/><br/>Most induction motors have either 2 or 4 poles." R"ArborCtl: Configuration Wizard" S4 T0 K{"2", "4", "6", "8"} F0 J2
+    M291 P"How many poles does your motor have?<br/><br/>Most induction motors have either 2 or 4 poles." R"ArborCtl: Configuration Wizard" S4 T0 K{"2", "4"} F0 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizMotorPoles = { (input+1)*2 }
@@ -102,7 +112,7 @@ if { var.wizMotorCurrent == null || var.wizReset }
 
 if { var.wizMotorRotationSpeed == null || var.wizReset }
     ; Calculate default RPM based on frequency and poles
-    var defaultRPM = { (var.wizMotorFrequency * 60 * 2) / var.wizMotorPoles }
+    var defaultRPM = { ceil((var.wizMotorFrequency * 60 * 2) / var.wizMotorPoles) }
     M291 P"What is the rated rotation speed of your motor?<br/><br/>Enter the value in RPM." R"ArborCtl: Configuration Wizard" S5 T0 L0 H24000 F{var.defaultRPM} J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
@@ -110,11 +120,11 @@ if { var.wizMotorRotationSpeed == null || var.wizReset }
 
 ; Get baud rate for the UART port
 if { var.wizBaudRate == null || var.wizReset }
-    var baudRates = {"9600", "19200", "38400", "57600"}
-    M291 P"Select the baud rate for your VFD communication:<br/><br/>Most VFDs work well with 38400 or 19200." R"ArborCtl: Configuration Wizard" S4 K{var.baudRates} F2 J2
+    var baudRateStrings = {"9600", "19200", "38400", "57600"}
+    var baudRates       = {9600, 19200, 38400, 57600}
+    M291 P"Select the baud rate for your VFD communication:<br/><br/>Most VFDs work well with 38400 or 19200." R"ArborCtl: Configuration Wizard" S4 K{var.baudRateStrings} F2 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
-    echo { "Selected baud rate: " ^ input }
     set var.wizBaudRate = { var.baudRates[input] }
 
 ; Ask user if they want to configure VFD now
@@ -123,9 +133,6 @@ if { result == -1 }
     abort { "ArborCtl: Operator aborted configuration wizard!" }
 
 if { input == 0 }
-    ; Configure UART port with the selected baud rate and Modbus RTU format
-    M291 P{"Configuring UART port " ^ var.wizChannel ^ " with baud rate " ^ var.wizBaudRate ^ " and Modbus RTU format..."} R"ArborCtl: Configuration Wizard" S1 T2
-    M575 P{var.wizChannel} B{var.wizBaudRate} S7
 
     ; Ask if user wants to reset VFD to factory defaults first
     M291 P"Would you like to reset the VFD to factory defaults before configuring?<br/><br/><b>WARNING:</b> This will erase ALL existing VFD settings!" R"ArborCtl: Configuration Wizard" S4 T0 K{"Yes", "No"} F1 J2
@@ -135,31 +142,40 @@ if { input == 0 }
 
     var configFile = { "arborctl/config/" ^ var.wizVFDType ^ ".g" }
     ; Configure the VFD - the VFD-specific file will handle both manual configuration guidance and automated settings
-    M98 P{var.configFile} C{var.wizChannel} A{var.wizVFDAddress} S{var.wizSpindleID} W{var.wizMotorPower} P{var.wizMotorPoles} V{var.wizMotorVoltage} F{var.wizMotorFrequency} I{var.wizMotorCurrent} R{var.wizMotorRotationSpeed} D{var.resetVFD ? 1 : 0} T0
+    M98 P{var.configFile} B{var.wizBaudRate} C{var.wizChannel} A{var.wizVFDAddress} S{var.wizSpindleID} W{var.wizMotorPower} U{var.wizMotorPoles} V{var.wizMotorVoltage} F{var.wizMotorFrequency} I{var.wizMotorCurrent} R{var.wizMotorRotationSpeed}
     ; Add other VFD types here in the future
 
 ; Create the actual user variables file
-echo >"0:/sys/"{var.wizUVF} "; ArborCtl User Variables"
-echo >>"0:/sys/"{var.wizUVF} ";"
-echo >>"0:/sys/"{var.wizUVF} "; This file is automatically generated by the ArborCtl configuration wizard."
-echo >>"0:/sys/"{var.wizUVF} "; You can edit this file manually at your own risk."
-echo >>"0:/sys/"{var.wizUVF} ""
+echo >{var.wizUVF}  "; ArborCtl User Variables"
+echo >>{var.wizUVF} ";"
+echo >>{var.wizUVF} "; This file is automatically generated by the ArborCtl configuration wizard."
+echo >>{var.wizUVF} "; You can edit this file manually at your own risk."
+echo >>{var.wizUVF} ""
 
 ; Write the user-friendly configuration
-echo >>"0:/sys/"{var.wizUVF} "; ArborCtl Configuration"
-echo >>"0:/sys/"{var.wizUVF} "; UART Configuration"
-echo >>"0:/sys/"{var.wizUVF} {"M575 P" ^ var.wizChannel ^ " B" ^ var.wizBaudRate ^ " S7 ; Configure UART for Modbus RTU"}
-echo >>"0:/sys/"{var.wizUVF} ""
+echo >>{var.wizUVF} "; ArborCtl Configuration"
+echo >>{var.wizUVF} "; UART Configuration"
+echo >>{var.wizUVF} {"M575 P" ^ var.wizChannel ^ " B" ^ var.wizBaudRate ^ " S7 ; Configure UART for Modbus RTU"}
+echo >>{var.wizUVF} ""
 
 ; VFD Configuration
-echo >>"0:/sys/"{var.wizUVF} "; VFD Configuration"
-echo >>"0:/sys/"{var.wizUVF} {"set global.arborVFDConfig[" ^ var.wizSpindleID ^ "] = "{"" ^ var.wizVFDType ^ """, " ^ var.wizChannel ^ ", " ^ var.wizVFDAddress ^ "}"}
-echo >>"0:/sys/"{var.wizUVF} ""
+echo >>{var.wizUVF} "; VFD Configuration"
+echo >>{var.wizUVF} {"set global.arborVFDConfig[" ^ var.wizSpindleID ^ "] = "{"" ^ var.wizVFDType ^ """, " ^ var.wizChannel ^ ", " ^ var.wizVFDAddress ^ "}"}
+echo >>{var.wizUVF} ""
+
+M999
 
 ; Remind users to add ArborCtL to config.g
-M291 P"ArborCtl configuration complete!<br/><br/>Make sure to add <b>M98 P\"arborctl.g\"</b> to the end of your config.g file if you haven't already." R"ArborCtl: Configuration Wizard" S2 T0
-if { result == -1 }
-    abort { "ArborCtl: Operator aborted configuration wizard!" }
+;M291 P"ArborCtl configuration complete. We will now try to test the spindle." R"ArborCtl: Configuration Wizard" S2 T0 J2
+;if { result == -1 }
+;    abort { "ArborCtl: Operator aborted configuration wizard!" }
 
-; Mark ArborCtl as loaded
-global arborctlLdd = true
+; Test the spindle
+
+;M291 P{"Start <b>Spindle " ^ var.wizSpindleID ^ "</b>?<br/><b>CAUTION</b>: Step away from the machine and remove any loose items before starting!"} R"ArborCtl: Configuration Wizard" S4 T0 K{"Yes","No"} F1
+;if { input != 0 }
+;    abort { "ArborCtl: Operator aborted configuration wizard!" }
+;M291 P"Starting spindle..." R"ArborCtl: Configuration Wizard" S2 T0 J2
+;M98 P{var.wizUVF}
+
+;M999
