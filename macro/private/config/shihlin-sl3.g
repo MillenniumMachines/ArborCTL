@@ -13,8 +13,6 @@
 ; I - Motor rated current (A)
 ; R - Motor rated rotation speed (RPM)
 ; D - Reset to factory defaults (1) or not (0)
-; T - Restart VFD after configuration (1) or not (0)
-; E - Execution mode: 1 for dry run (connection check only)
 
 if { !exists(param.A) }
     abort { "ArborCtl: Shihlin-SL3 - No address specified!" }
@@ -50,12 +48,14 @@ if { !exists(param.R) }
 ; Load the settings file which will define global.sl3ConfigParams
 M98 P"arborctl/settings/shihlin-sl3.g" W{param.W} U{param.U} V{param.V} F{param.F} I{param.I} R{param.R}
 
-var waitTime = 150
+var waitTime = 250
 
 ; Configure UART port with the selected baud rate
 M575 P{param.C} B{param.B} S7
 
 var vfdModelDetected = { null }
+
+var reset = { exists(param.D) && param.D == 1 }
 
 while { var.vfdModelDetected == null }
     ; Check if the VFD is powered on and responding

@@ -7,7 +7,7 @@ if { !exists(global.sl3SpecialParams) }
 
 ; Pre-allocate the configuration parameters vector - increased to handle split params
 if { !exists(global.sl3ConfigParams) }
-    global sl3ConfigParams = { vector(17, null) }
+    global sl3ConfigParams = { vector(18, null) }  ; Increased size to accommodate new parameter
 
 ; ========== CU MODE SETTINGS (FIRST) ==========
 ; P.79/0016 - Operation mode selection: 0 (CU mode)
@@ -19,8 +19,10 @@ set global.sl3ConfigParams[0] = { {10016, {3,}} }
 set global.sl3ConfigParams[1] = { {10711, {0,}} }
 
 ; ========== SYSTEM SETTINGS ==========
+; P.37/00-08 - Speed display scaling: Set to the equivalent RPM at 60Hz
+; This value represents what RPM the display should show when running at 60Hz
 ; P.259/00-09 - Speed unit selection: 0 (Hz - frequency display)
-set global.sl3ConfigParams[2] = { {10009, {0,}} }
+set global.sl3ConfigParams[2] = { {10008, { ceil((param.R / param.F) * 60), 0}} }
 
 ; P.189/00-24 - 50Hz/60Hz switch selection: 1 (60Hz system)
 set global.sl3ConfigParams[3] = { {10024, {1,}} }
@@ -44,7 +46,6 @@ set global.sl3ConfigParams[5] = { {10103, {40000,}} }
 set global.sl3ConfigParams[6] = { {10102, {40000,}} }
 set global.sl3ConfigParams[7] = { {10100, {40000, 333}} }
 
-
 ; ========== OPERATION SETTINGS (CONSECUTIVE REGISTERS) ==========
 ; P.20/01-09 - Acc/Dec reference frequency: 400.00Hz
 ; P.0/01-10 - Torque boost: 5.0%
@@ -65,24 +66,27 @@ set global.sl3ConfigParams[10] = { {10115, {1,}} }
 ; P.12/10-02 - DC Brake Operating Voltage Percent
 set global.sl3ConfigParams[11] = { {11000, {12000, 10, 300}} }
 
+; P.22/06-01 - Stall Prevention Operation Level: 150%
+set global.sl3ConfigParams[12] = { {10601, {1500,}} }
+
 ; ========== CONTROL SETTINGS ==========
 ; P.161/00-07 - Multi-Function display: 5 (Output current)
-set global.sl3ConfigParams[12] = { {10007, {5,}} }
+set global.sl3ConfigParams[13] = { {10007, {5,}} }
 
 ; ========== COMMUNICATION SETTINGS (CONSECUTIVE REGISTERS) ==========
 ; P.52/07-08 - Number of communication retries: 1
 ; P.53/07-09 - Communication check time interval: 1.0s (in 0.1s units)
 ; P.153/07-10 - Communication error handling: 0 (alarm and stop)
-set global.sl3ConfigParams[13] = { {10708, {1, 10, 0}} }
+set global.sl3ConfigParams[14] = { {10708, {1, 10, 0}} }
 
 ; ========== ALARM SETTINGS ==========
 ; P.288/06-40 - Alarm code query: 12
-set global.sl3ConfigParams[14] = { {10640, {12,}} }
+set global.sl3ConfigParams[15] = { {10640, {12,}} }
 
 ; ========== FINAL SETTINGS ==========
 ; P.79/0016 - Operation mode selection: 0 (CU mode)
-set global.sl3ConfigParams[15] = { {10016, {3,}} }
+set global.sl3ConfigParams[16] = { {10016, {3,}} }
 
 ; P.34/07-11 - EEPROM write selection: 1 (disable writes to persist to EEPROM)
 ; Note: This must be set last to ensure all subsequent parameter changes are not persisted
-set global.sl3ConfigParams[16] = { {10711, {1,}} }
+set global.sl3ConfigParams[17] = { {10711, {1,}} }

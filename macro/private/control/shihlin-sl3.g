@@ -32,6 +32,7 @@ if { global.arborState[param.S][0] == null }
 
     ; 0 = Frequency Conversion Factor
     M261.1 P{param.C} A{param.A} F3 R{var.freqConvAddr} B1 V"freqConv"
+    G4 P{var.cmdWait}
 
     if { var.motorCfg == null || var.spindleLimits == null || var.freqConv == null }
         echo { "Unable to load necessary data from VFD for spindle control!"}
@@ -41,9 +42,15 @@ if { global.arborState[param.S][0] == null }
     set var.motorCfg[3]      = { var.motorCfg[3] / 100 }
     set var.motorCfg[4]      = { var.motorCfg[4] / 100 }
     set var.motorCfg[5]      = { var.motorCfg[5] * 10 }
-    set var.spindleLimits[0] = { var.spindleLimits[0] / 100 }
-    set var.spindleLimits[1] = { var.spindleLimits[1] / 100 }
-    set var.freqConv[0]      = { var.freqConv[0] / 60 }
+    set var.spindleLimits[0] = { ceil(var.spindleLimits[0] / 100) }
+    set var.spindleLimits[1] = { floor(var.spindleLimits[1] / 100) }
+
+    ; Handle the case when frequency conversion factor is 0 or null
+    if { var.freqConv == null || var.freqConv[0] == 0 }
+        echo { "ArborCtl: No frequency conversion factor detected, using default 1:1 mapping" }
+        set var.freqConv = { vector(1, 1) }
+    else
+        set var.freqConv[0] = { var.freqConv[0] / 60 }
 
     echo { "ArborCTL Shihlin SL3 Configuration: "}
     echo { "  Power=" ^ var.motorCfg[0] ^ "W, Poles=" ^ var.motorCfg[1] ^ ", Voltage=" ^ var.motorCfg[2] ^ "V" }
@@ -67,8 +74,6 @@ M261.1 P{param.C} A{param.A} F3 R{var.powerAddr} B1 V"spindlePower"
 G4 P{var.cmdWait}
 
 ; Make sure we have all the data we need.
-; If we do not have spindle state or errors, we are in
-; an unknown state and should stop the spindle immediately.
 if { var.spindleState == null }
     M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B0
     G4 P{var.cmdWait}
@@ -77,19 +82,30 @@ if { var.spindleState == null }
     M5
     abort { "ArborCtl: Failed to read spindle state!" }
 
+; Check if VFD is in emergency stop
+if { var.spindleState[0] == 128 }
+    echo { "ArborCtl: VFD in emergency stop!" }
+    set global.arborState[param.S][4] = true
+    M99
+
 ; Check for VFD errors
 if { var.spindleState[5] > 0 }
     echo { "ArborCtl: VFD Error detected. Code=" ^ var.spindleState[5] }
-    set global.arborVFDError[param.S] = true
+    set global.arborState[param.S][4] = true
     M99
 
-; Extract status bits from spindleState
-var vfdRunning      = { mod(var.spindleState[0], 2) > 0 }
-var vfdForward      = { mod(floor(var.spindleState[0] / 2), 2) > 0 }
-var vfdReverse      = { mod(floor(var.spindleState[0] / 4), 2) > 0 }
-var vfdSpeedReached = { mod(floor(var.spindleState[0] / 8), 2) > 0 }
-var vfdInputFreq    = { var.spindleState[1] }
-var vfdOutputFreq   = { var.spindleState[2] }
+; Extract status bits from spindleState using modulo and division
+; Bit 0: Running (0=stopped, 1=running)
+; Bit 1: Forward (1=forward)
+; Bit 2: Reverse (1=reverse)
+; Bit 3: Speed reached (0=not reached, 1=reached)
+echo { "ArborCtl: VFD Status: " ^ var.spindleState[0] }
+var vfdRunning = { mod(var.spindleState[0], 2) == 1 }
+var vfdForward = { mod(floor(var.spindleState[0] / 2), 2) == 1 }
+var vfdReverse = { mod(floor(var.spindleState[0] / 4), 2) == 1 }
+var vfdSpeedReached = { mod(floor(var.spindleState[0] / 8), 2) == 1 }
+var vfdInputFreq = { var.spindleState[1] }
+var vfdOutputFreq = { var.spindleState[2] }
 
 ; Calculate power consumption
 if { var.spindlePower == null }
@@ -109,17 +125,19 @@ var commandChange = false
 ; Stop spindle as early as possible if it should not be running
 if { !var.shouldRun && var.vfdRunning }
     echo { "ArborCtl: Stopping spindle " ^ param.S }
-    ; Stop spindle, set frequency to 0
+    ; Stop spindle - Command 0 = Stop
     M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B0
     G4 P{var.cmdWait}
+    ; Set frequency to 0
     M260.1 P{param.C} A{param.A} F6 R{var.freqAddr} B0
     G4 P{var.cmdWait}
 
     set var.commandChange = true
-else
+elif { var.shouldRun }
     ; Calculate the frequency to set based on the rpm requested,
     ; the max and min frequencies, the number of poles
     ; and the conversion factor.
+    ; The conversion factor is the RPM that the spindle runs at with a 60Hz input.
     var numPoles   = { global.arborState[param.S][0][0][1] }
     var convFactor = { global.arborState[param.S][0][1][0] }
     var maxFreq    = { global.arborState[param.S][3][0] }
@@ -130,29 +148,33 @@ else
     ; Adjust for the conversion factor and divide by
     ; 60 to normalise to Hz.
 
-    ; Clamp the frequency to the limits
-    var newFreq = { min(var.maxFreq, max(var.minFreq, (spindles[param.S].active * var.numPoles) / 120)) }
+    echo { "ArborCtl: Conversion Factor: " ^ var.convFactor }
 
-    ; Adjust for the conversion factor
-    set var.newFreq = { ceil(var.newFreq * var.convFactor) }
+    ; Account for new convFactor
+    ; Clamp the frequency to the limits and ensure we get a valid result
+    var newFreq = { ceil(min(var.maxFreq, max(var.minFreq, ((abs(spindles[param.S].current) * var.numPoles) / 120))) * var.convFactor) }
 
     ; Set input frequency if it doesn't match the RRF value
     if { var.vfdInputFreq != var.newFreq }
-        echo { "ArborCtl: Setting spindle " ^ param.S ^ " frequency to " ^ var.newFreq }
+        echo { "ArborCtl: VFD Input frequency: " ^ var.vfdInputFreq ^ ", setting to " ^ var.newFreq }
         M260.1 P{param.C} A{param.A} F6 R{var.freqAddr} B{var.newFreq}
         G4 P{var.cmdWait}
         set var.commandChange = true
 
-    ; Set spindle direction forward if it is not running forward
-    if { spindles[param.S].state == "forward" && !var.vfdForward }
-        echo { "ArborCtl: Setting spindle " ^ param.S ^ " direction to forward" }
+    ; Set spindle direction forward if needed
+    if { spindles[param.S].state == "forward" && (!var.vfdRunning || !var.vfdForward) }
+        echo { "ArborCtl: VFD Running: " ^ var.vfdRunning ^ ", Forward: " ^ var.vfdForward ^ ", setting to forward" }
+        ; Command for forward - 1 for run (bit 0), 0 for forward (bit 1)
         M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B2
+        G4 P{var.cmdWait}
         set var.commandChange = true
 
-    ; Set spindle direction reverse if it is not running in reverse
-    elif { spindles[param.S].state == "reverse" && !var.vfdReverse }
-        echo { "ArborCtl: Setting spindle " ^ param.S ^ " direction to reverse" }
+    ; Set spindle direction reverse if needed
+    elif { spindles[param.S].state == "reverse" && (!var.vfdRunning || !var.vfdReverse) }
+        echo { "ArborCtl: VFD Running: " ^ var.vfdRunning ^ ", Reverse: " ^ var.vfdReverse ^ ", setting to reverse" }
+        ; Command for reverse - 1 for run (bit 0), 2 for reverse (bit 1)
         M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B4
+        G4 P{var.cmdWait}
         set var.commandChange = true
 
 ; Calculate current RPM from output frequency
