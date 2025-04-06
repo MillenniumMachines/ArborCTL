@@ -99,7 +99,6 @@ if { var.spindleState[5] > 0 }
 ; Bit 1: Forward (1=forward)
 ; Bit 2: Reverse (1=reverse)
 ; Bit 3: Speed reached (0=not reached, 1=reached)
-echo { "ArborCtl: VFD Status: " ^ var.spindleState[0] }
 var vfdRunning = { mod(var.spindleState[0], 2) == 1 }
 var vfdForward = { mod(floor(var.spindleState[0] / 2), 2) == 1 }
 var vfdReverse = { mod(floor(var.spindleState[0] / 4), 2) == 1 }
@@ -148,31 +147,24 @@ elif { var.shouldRun }
     ; Adjust for the conversion factor and divide by
     ; 60 to normalise to Hz.
 
-    echo { "ArborCtl: Conversion Factor: " ^ var.convFactor }
-
     ; Account for new convFactor
     ; Clamp the frequency to the limits and ensure we get a valid result
     var newFreq = { ceil(min(var.maxFreq, max(var.minFreq, ((abs(spindles[param.S].current) * var.numPoles) / 120))) * var.convFactor) }
 
     ; Set input frequency if it doesn't match the RRF value
     if { var.vfdInputFreq != var.newFreq }
-        echo { "ArborCtl: VFD Input frequency: " ^ var.vfdInputFreq ^ ", setting to " ^ var.newFreq }
         M260.1 P{param.C} A{param.A} F6 R{var.freqAddr} B{var.newFreq}
         G4 P{var.cmdWait}
         set var.commandChange = true
 
     ; Set spindle direction forward if needed
     if { spindles[param.S].state == "forward" && (!var.vfdRunning || !var.vfdForward) }
-        echo { "ArborCtl: VFD Running: " ^ var.vfdRunning ^ ", Forward: " ^ var.vfdForward ^ ", setting to forward" }
-        ; Command for forward - 1 for run (bit 0), 0 for forward (bit 1)
         M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B2
         G4 P{var.cmdWait}
         set var.commandChange = true
 
     ; Set spindle direction reverse if needed
     elif { spindles[param.S].state == "reverse" && (!var.vfdRunning || !var.vfdReverse) }
-        echo { "ArborCtl: VFD Running: " ^ var.vfdRunning ^ ", Reverse: " ^ var.vfdReverse ^ ", setting to reverse" }
-        ; Command for reverse - 1 for run (bit 0), 2 for reverse (bit 1)
         M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B4
         G4 P{var.cmdWait}
         set var.commandChange = true
