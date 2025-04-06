@@ -72,17 +72,17 @@ while { var.vfdModelDetected == null }
         if { input == 0 }
             M291 P{"These settings need to be configured directly on your VFD's control panel."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
 
-            M291 P{"STEP 1: Enter Parameter Setting Mode<br/><br/>Press <b>MODE</b> repeatedly to select parameter setting mode (screen will show 00-00)."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
+            M291 P{"STEP 1: Enter Parameter Setting Mode<br/><br/>Press <b>MODE</b> repeatedly to select parameter setting mode.<br/>Screen will either show 00-00 in Group mode or P.000 in Parameter mode."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
 
-            M291 P{"STEP 2: Set Group 07-00 (P.33)<br/><br/>Select parameter <b>P.33</b>, press <b>SET</b>, change value to <b>0</b> (Modbus), hold <b>SET</b> again to confirm."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
+            M291 P{"STEP 2: Set Group 07-00 or Parameter P.033<br/><br/>Select parameter <b>07-00</b>/<b>P.033</b>, press <b>SET</b>, change value to <b>0</b> (Modbus), hold <b>SET</b> again to confirm."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
 
-            M291 P{"STEP 3: Set Group 07-01 (P.36)<br/><br/>Select parameter <b>P.36</b>, press <b>SET</b>, change value to <b>" ^ param.A ^ "</b>, hold <b>SET</b>."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
+            M291 P{"STEP 3: Set Group 07-01 or Parameter P.036<br/><br/>Select parameter <b>07-01</b>/<b>P.036</b>, press <b>SET</b>, change value to <b>" ^ param.A ^ "</b>, hold <b>SET</b>."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
 
-            M291 P{"STEP 4: Set Group 07-02 (P.32)<br/><br/>Select parameter <b>P.32</b>, press <b>SET</b>, change value to <b>3</b>, hold <b>SET</b>.<br/>This sets the baud rate to 38400bps."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
+            M291 P{"STEP 4: Set Group 07-02 or Parameter P.032<br/><br/>Select parameter <b>07-02</b>/<b>P.032</b>, press <b>SET</b>, change value to <b>3</b>, hold <b>SET</b>.<br/>This sets the baud rate to 38400bps."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
 
-            M291 P{"STEP 5: Set Group 07-07 (P.154)<br/><br/>Select parameter <b>P.154</b>, press <b>SET</b>, change value to <b>6</b>, hold <b>SET</b>.<br/>This sets the Modbus format to RTU 8N1."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
+            M291 P{"STEP 5: Set Group 07-07 or Parameter P.154<br/><br/>Select parameter <b>07-02</b>/<b>P.154</b>, press <b>SET</b>, change value to <b>6</b>, hold <b>SET</b>.<br/>This sets the Modbus format to RTU 8N1."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
 
-            M291 P{"STEP 6: Restart VFD (Group 00-02 setting 2)<br/><br/>Select parameter <b>P.997</b>, press <b>SET</b>, change value to <b>1</b>, hold <b>SET</b>.<br/>This restarts the VFD to apply the new settings."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
+            M291 P{"STEP 6: Restart VFD, Group 00-02 or Parameter P.997<br/><br/>Select parameter <b>00-02</b>/<b>P.997</b>, press <b>SET</b>, change value to <b>2</b> in Group or <b>1</b> in Parameter mode resp., hold <b>SET</b>.<br/>This restarts the VFD to apply the new settings."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
 
             M291 P"Press OK once VFD has restarted to retry the connection." R"ArborCtl: Shihlin-SL3 Setup" S2 T0 J2
             if { result == -1 }
