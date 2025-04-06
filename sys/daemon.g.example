@@ -3,8 +3,8 @@
 while { exists(global.runDaemon) && global.runDaemon }
     G4 P{200} ; Minimum interval between daemon runs
 
-    if { fileexists("0:/sys/arborctl/arbor-daemon.g") }
-        M98 P"arborctl/arbor-daemon.g" ; Control spindle using ArborCTL
+    if { fileexists("0:/sys/arborctl/arborctl-daemon.g") }
+        M98 P"arborctl/arborctl-daemon.g" ; Control spindle using ArborCTL
 
     if { fileexists("0:/sys/user-daemon.g") }
         M98 P"user-daemon.g"
