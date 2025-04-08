@@ -20,9 +20,6 @@ if { !exists(param.A) }
 if { !exists(param.B) }
     abort { "ArborCtl: Shihlin-SL3 - No baud rate specified!" }
 
-if { param.B != 9600 && param.B != 19200 && param.B != 38400 }
-    abort { "ArborCtl: Shihlin-SL3 - Invalid baud rate specified! Supported rates are 9600, 19200 and 38400." }
-
 var baudRateParameterMapped = 0 ; see manual page 114
 if { param.B == 9600 }
     set var.baudRateParameterMapped = 1
@@ -30,6 +27,9 @@ else if { param.B == 19200 }
     set var.baudRateParameterMapped = 2
 else if { param.B == 38400 }
     set var.baudRateParameterMapped = 3
+
+if { baudRateParameterMapped == 0 }
+    abort { "ArborCtl: Shihlin-SL3 - Invalid baud rate specified! Supported rates are 9600, 19200 and 38400." }
 
 if { !exists(param.C) }
     abort { "ArborCtl: Shihlin-SL3 - No channel specified!" }
