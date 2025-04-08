@@ -149,7 +149,7 @@ echo >>{var.wizUVF} ""
 ; Write the user-friendly configuration
 echo >>{var.wizUVF} "; ArborCtl Configuration"
 echo >>{var.wizUVF} "; UART Configuration"
-echo >>{var.wizUVF} {"M575 P" ^ var.wizChannel ^ " B" ^ var.wizBaudRate ^ " S7 ; Configure UART for Modbus RTU"}
+echo >>{var.wizUVF} {"M575 P" ^ var.wizChannel ^ " B" ^ var.wizBaudRate ^ " S7 ; Configure UART for Modbus RTU, baud rate must match VFD baud rate"}
 echo >>{var.wizUVF} ""
 
 ; VFD Configuration
