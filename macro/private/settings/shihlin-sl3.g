@@ -43,8 +43,14 @@ set global.sl3ConfigParams[5] = { {10103, {40000,}} }
 ; P.1/01-00 - Maximum frequency: 400.00Hz
 ; P.2/01-01 - Minimum frequency: 3.33Hz
 ; P.18/01-02 - High-speed maximum frequency: 400.00Hz
-set global.sl3ConfigParams[6] = { {10102, {40000,}} }
-set global.sl3ConfigParams[7] = { {10100, {40000, 333}} }
+
+; Calculate max and min frequency based on param.T and param.E (min/max spindle speed in RPM)
+; Take into account motor poles and convert to Hz, then multiply by 100
+var minFreq = { ceil((param.T / 120) * param.U * 100) }
+var maxFreq = { ceil((param.E / 120) * param.U * 100) }
+
+set global.sl3ConfigParams[6] = { {10100, { var.maxFreq, }} }
+set global.sl3ConfigParams[7] = { {10100, { var.maxFreq, var.minFreq, }} }
 
 ; ========== OPERATION SETTINGS (CONSECUTIVE REGISTERS) ==========
 ; P.20/01-09 - Acc/Dec reference frequency: 400.00Hz

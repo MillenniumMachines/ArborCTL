@@ -6,8 +6,10 @@
 ; B - Baud rate
 ; C - Communication channel (UART port)
 ; S - Spindle ID to configure
+; T - Spindle Minimum Speed (RPM)
+; E - Spindle Maximum Speed (RPM)
 ; W - Motor rated power (kW)
-; P - Motor poles (2, 4, 6, 8)
+; U - Motor poles (2, 4, 6, 8)
 ; V - Motor rated voltage (V)
 ; F - Motor rated frequency (Hz)
 ; I - Motor rated current (A)
@@ -25,6 +27,15 @@ if { !exists(param.C) }
 
 if { !exists(param.S) }
     abort { "ArborCtl: Shihlin-SL3 - No spindle specified!" }
+
+if { !exists(param.T) }
+    abort { "ArborCtl: Shihlin-SL3 - No spindle minimum speed specified!" }
+
+if { !exists(param.E) }
+    abort { "ArborCtl: Shihlin-SL3 - No spindle maximum speed specified!" }
+
+if { param.T > param.E }
+    abort { "ArborCtl: Shihlin-SL3 - Spindle minimum speed cannot be greater than maximum speed!" }
 
 if { !exists(param.W) }
     abort { "ArborCtl: Shihlin-SL3 - No motor rated power specified!" }
@@ -46,7 +57,7 @@ if { !exists(param.R) }
 
 
 ; Load the settings file which will define global.sl3ConfigParams
-M98 P"arborctl/settings/shihlin-sl3.g" W{param.W} U{param.U} V{param.V} F{param.F} I{param.I} R{param.R}
+M98 P"arborctl/settings/shihlin-sl3.g" W{param.W} U{param.U} V{param.V} F{param.F} I{param.I} R{param.R} T{param.T} E{param.E}
 
 var waitTime = 250
 
@@ -80,7 +91,18 @@ while { var.vfdModelDetected == null }
 
             M291 P{"STEP 3: Set VFD address<br/><br/>Select parameter <b>G07-01</b> or <b>P.036</b>, press <b>SET</b>, change value to <b>" ^ param.A ^ "</b>, hold <b>SET</b>."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
 
-            M291 P{"STEP 4: Set Modbus baudrate to 38400bps<br/><br/>Select parameter <b>G07-02</b> or <b>P.032</b>, press <b>SET</b>, change value to <b>3</b>, hold <b>SET</b>."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
+            ; Baud rate needs to be converted to an integer value that can be set via this parameter.
+            ; The mapping is as follows:
+            ; 4800 -> 0
+            ; 9600 -> 1
+            ; 19200 -> 2
+            ; 38400 -> 3
+
+            var baudRateValue = { param.B == 4800 ? 0 : param.B == 9600 ? 1 : param.B == 19200 ? 2 : param.B == 38400 ? 3 : -1 }
+            if { var.baudRateValue == -1 }
+                abort { "ArborCtl: Shihlin-SL3 - Invalid baud rate specified!" }
+
+            M291 P{"STEP 4: Set Modbus baudrate to " ^ param.B ^ "bps<br/><br/>Select parameter <b>G07-02</b> or <b>P.032</b>, press <b>SET</b>, change value to <b>^ var.baudRateValue ^</b>, hold <b>SET</b>."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
 
             M291 P{"STEP 5: Set Modbus format to RTU 8N1<br/><br/>Select parameter <b>G07-07</b> or <b>P.154</b>, press <b>SET</b>, change value to <b>6</b>, hold <b>SET</b>."} R"ArborCtl: Shihlin-SL3 Setup" S2 T0
 
