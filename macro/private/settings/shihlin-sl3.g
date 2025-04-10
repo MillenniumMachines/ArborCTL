@@ -38,26 +38,27 @@ set global.sl3ConfigParams[4] = { {10501, {ceil(param.W * 100), param.U, param.V
 
 ; ========== FREQUENCY PARAMETERS ==========
 ; P.3/01-03 - Base frequency: 400.00Hz
-set global.sl3ConfigParams[5] = { {10103, {40000,}} }
-
-; P.1/01-00 - Maximum frequency: 400.00Hz
-; P.2/01-01 - Minimum frequency: 3.33Hz
-; P.18/01-02 - High-speed maximum frequency: 400.00Hz
 
 ; Calculate max and min frequency based on param.T and param.E (min/max spindle speed in RPM)
 ; Take into account motor poles and convert to Hz, then multiply by 100
 var minFreq = { ceil((param.T / 120) * param.U * 100) }
 var maxFreq = { ceil((param.E / 120) * param.U * 100) }
 
-set global.sl3ConfigParams[6] = { {10100, { var.maxFreq, }} }
+set global.sl3ConfigParams[5] = { {10103, {var.maxFreq,}} }
+
+; P.18/01-02 - High-speed maximum frequency: var.maxFreq (set first)
+; P.1/01-00 - Maximum frequency: var.maxFreq
+; P.2/01-01 - Minimum frequency: var.minFreq
+
+set global.sl3ConfigParams[6] = { {10102, { var.maxFreq, }} }
 set global.sl3ConfigParams[7] = { {10100, { var.maxFreq, var.minFreq, }} }
 
 ; ========== OPERATION SETTINGS (CONSECUTIVE REGISTERS) ==========
-; P.20/01-09 - Acc/Dec reference frequency: 400.00Hz
+; P.20/01-09 - Acc/Dec reference frequency: var.maxFreq
 ; P.0/01-10 - Torque boost: 5.0%
 ; P.13/01-11 - Starting frequency: 3.33Hz
-; P.14/01-12 - Load pattern selection: 1
-set global.sl3ConfigParams[8] = { {10109, {40000, 50, 333, 1}} }
+; P.14/01-12 - Load pattern selection: 1 (variable torque load)
+set global.sl3ConfigParams[8] = { {10109, {var.maxFreq, 50, 333, 1}} }
 
 ; P.29/01-05 - Acceleration/deceleration curve selection: 1
 ; P.4/01-06 - Acceleration time: 2.5s
@@ -69,7 +70,7 @@ set global.sl3ConfigParams[10] = { {10115, {1,}} }
 
 ; P.10/10-00 - DC Brake Operating Frequency: 120Hz
 ; P.11/10-01 - DC Brake Time: 1.0s
-; P.12/10-02 - DC Brake Operating Voltage Percent
+; P.12/10-02 - DC Brake Operating Voltage Percent: 30%
 set global.sl3ConfigParams[11] = { {11000, {12000, 10, 300}} }
 
 ; P.22/06-01 - Stall Prevention Operation Level: 150%
