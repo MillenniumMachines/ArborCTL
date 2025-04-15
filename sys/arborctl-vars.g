@@ -1,4 +1,4 @@
-; arbor-vars.g - Variables required for ArborCtl RS485 spindle control
+; arborctl-vars.g - Variables required for ArborCtl RS485 spindle control
 
 ; Available Spindle / VFD models
 global arborAvailableModels = { "shihlin-sl3", "huanyang-hy02d223b" }

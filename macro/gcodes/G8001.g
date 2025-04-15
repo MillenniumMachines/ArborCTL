@@ -27,38 +27,38 @@ var wizMotorAmps = null  ; I
 var wizMotorSpd = null   ; R
 var wizBaudRate = null   ; Baud rate for UART
 
-M291 P"Welcome to ArborCtl! This wizard will walk you through VFD configuration.<br/>You can run this wizard again using <b>G8001</b> or clicking the <b>""Run ArborCtl Configuration Wizard""</b> macro." R"ArborCtl: Configuration Wizard" S3 T0 J2
+M291 P{"Welcome to ArborCtl! This wizard will walk you through VFD configuration.<br/>You can run this wizard again using <b>G8001</b> or clicking the <b>""Run ArborCtl Configuration Wizard""</b> macro."} R"ArborCtl: Configuration Wizard" S3 T0 J2
 if { result == -1 }
     abort { "ArborCtl: Operator aborted configuration wizard!" }
 
 ; Check if ArborCtl is already configured
 if { exists(global.arborctlLdd) && global.arborctlLdd }
-    M291 P"ArborCtl is already configured. Click <b>Continue</b> to re-configure and change settings, or <b>Reset</b> to reset all settings and start again." R"ArborCtl: Configuration Wizard" S4 T0 K{"Continue","Reset"} J2
+    M291 P{"ArborCtl is already configured. Click <b>Continue</b> to re-configure and change settings, or <b>Reset</b> to reset all settings and start again."} R"ArborCtl: Configuration Wizard" S4 T0 K{"Continue","Reset"} J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
 elif { exists(global.arborctlErr) && global.arborctlErr != null }
-    M291 P"ArborCtl could not be loaded due to a startup error.<br/>Click <b>Update</b> to configure any missing settings or <b>Reset</b> to reset all settings and start again." R"ArborCtl: Configuration Wizard" S4 T0 K{"Update","Reset"}
+    M291 P{"ArborCtl could not be loaded due to a startup error.<br/>Click <b>Update</b> to configure any missing settings or <b>Reset</b> to reset all settings and start again."} R"ArborCtl: Configuration Wizard" S4 T0 K{"Update","Reset"}
 
 ; Reset if requested
 set var.wizReset = { (input == 1) }
 
 ; Get communication channel
 if { var.wizChan == null || var.wizReset }
-    M291 P"Which UART channel is your VFD connected to?" R"ArborCtl: Configuration Wizard" S4 T0 K{"AUX 0 (First port)", "AUX 1 (Second port)", "AUX 2 (Third port)"} F0 J2
+    M291 P{"Which UART channel is your VFD connected to?" R"ArborCtl: Configuration Wizard"} S4 T0 K{"AUX 0 (First port)", "AUX 1 (Second port)", "AUX 2 (Third port)"} F0 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizChan = { input+1 }
 
 ; Get VFD type
 if { var.wizVFDType == null || var.wizReset }
-    M291 P"What type of VFD do you have?" R"ArborCtl: Configuration Wizard" S4 T0 K{global.arborAvailableModels} F0 J2
+    M291 P{"What type of VFD do you have?" R"ArborCtl: Configuration Wizard"} S4 T0 K{global.arborAvailableModels} F0 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizVFDType = { global.arborAvailableModels[input] }
 
 ; Get VFD address
 if { var.wizVFDAddr == null || var.wizReset }
-    M291 P"What is the Modbus address of your VFD?<br/><br/>This is typically 1, but can be changed in your VFD settings." R"ArborCtl: Configuration Wizard" S5 T0 L1 H247 F1 J2
+    M291 P{"What is the Modbus address of your VFD?<br/><br/>This is typically 1, but can be changed in your VFD settings."} R"ArborCtl: Configuration Wizard" S5 T0 L1 H247 F1 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizVFDAddr = { input }
@@ -86,31 +86,31 @@ var wizSpdlMax = { spindles[var.wizSpdlID].max }
 
 ; Get motor parameters first so we can pass them to the VFD configuration file
 if { var.wizMotorPwr == null || var.wizReset }
-    M291 P"What is the rated power of your motor?<br/><br/>Enter the value in kW." R"ArborCtl: Configuration Wizard" S6 T0 L0 H100 F1.5 J2
+    M291 P{"What is the rated power of your motor?<br/><br/>Enter the value in kW."} R"ArborCtl: Configuration Wizard" S6 T0 L0 H100 F1.5 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizMotorPwr = { input }
 
 if { var.wizMotorPoles == null || var.wizReset }
-    M291 P"How many poles does your motor have?<br/><br/>Most induction motors have either 2 or 4 poles." R"ArborCtl: Configuration Wizard" S4 T0 K{"2", "4"} F0 J2
+    M291 P{"How many poles does your motor have?<br/><br/>Most induction motors have either 2 or 4 poles."} R"ArborCtl: Configuration Wizard" S4 T0 K{"2", "4"} F0 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizMotorPoles = { (input+1)*2 }
 
 if { var.wizMotorVolts == null || var.wizReset }
-    M291 P"What is the rated voltage of your motor?<br/><br/>Enter the value in volts." R"ArborCtl: Configuration Wizard" S6 T0 L0 H1000 F220 J2
+    M291 P{"What is the rated voltage of your motor?<br/><br/>Enter the value in volts."} R"ArborCtl: Configuration Wizard" S6 T0 L0 H1000 F220 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizMotorVolts = { input }
 
 if { var.wizMotorFreq == null || var.wizReset }
-    M291 P"What is the rated frequency of your motor?<br/><br/>Enter the value in Hz." R"ArborCtl: Configuration Wizard" S6 T0 L0 H800 F400 J2
+    M291 P{"What is the rated frequency of your motor?<br/><br/>Enter the value in Hz."} R"ArborCtl: Configuration Wizard" S6 T0 L0 H800 F400 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizMotorFreq = { input }
 
 if { var.wizMotorAmps == null || var.wizReset }
-    M291 P"What is the rated current of your motor?<br/><br/>Enter the value in amperes." R"ArborCtl: Configuration Wizard" S6 T0 L0 H100 F10 J2
+    M291 P{"What is the rated current of your motor?<br/><br/>Enter the value in amperes."} R"ArborCtl: Configuration Wizard" S6 T0 L0 H100 F10 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizMotorAmps = { input }
@@ -118,7 +118,7 @@ if { var.wizMotorAmps == null || var.wizReset }
 if { var.wizMotorSpd == null || var.wizReset }
     ; Calculate default RPM based on frequency and poles
     var defaultRPM = { ceil((var.wizMotorFreq * 60 * 2) / var.wizMotorPoles) }
-    M291 P"What is the rated rotation speed of your motor?<br/><br/>Enter the value in RPM." R"ArborCtl: Configuration Wizard" S5 T0 L0 H24000 F{var.defaultRPM} J2
+    M291 P{"What is the rated rotation speed of your motor?<br/><br/>Enter the value in RPM."} R"ArborCtl: Configuration Wizard" S5 T0 L0 H24000 F{var.defaultRPM} J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizMotorSpd = { input }
@@ -127,13 +127,13 @@ if { var.wizMotorSpd == null || var.wizReset }
 if { var.wizBaudRate == null || var.wizReset }
     var baudRateStrings = {"4800", "9600", "19200", "38400", "57600"}
     var baudRates       = {4800, 9600, 19200, 38400, 57600}
-    M291 P"Select the baud rate for your VFD communication:<br/><br/>Most VFDs work well with 38400 or 19200." R"ArborCtl: Configuration Wizard" S4 K{var.baudRateStrings} F3 J2
+    M291 P{"Select the baud rate for your VFD communication:<br/><br/>Most VFDs work well with 38400 or 19200."} R"ArborCtl: Configuration Wizard" S4 K{var.baudRateStrings} F3 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizBaudRate = { var.baudRates[input] }
 
 ; Ask user if they want to configure VFD now
-M291 P"Do you want to configure your VFD and motor settings now?<br/><br/>The VFD must be correctly connected and powered on." R"ArborCtl: Configuration Wizard" S4 T0 K{"Yes", "No"} F0 J2
+M291 P{"Do you want to configure your VFD and motor settings now?<br/><br/>The VFD must be correctly connected and powered on."} R"ArborCtl: Configuration Wizard" S4 T0 K{"Yes", "No"} F0 J2
 if { result == -1 }
     abort { "ArborCtl: Operator aborted configuration wizard!" }
 
