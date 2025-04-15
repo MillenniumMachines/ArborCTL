@@ -44,14 +44,14 @@ set var.wizReset = { (input == 1) }
 
 ; Get communication channel
 if { var.wizChan == null || var.wizReset }
-    M291 P{"Which UART channel is your VFD connected to?" R"ArborCtl: Configuration Wizard"} S4 T0 K{"AUX 0 (First port)", "AUX 1 (Second port)", "AUX 2 (Third port)"} F0 J2
+    M291 P{"Which UART channel is your VFD connected to?"} R"ArborCtl: Configuration Wizard" S4 T0 K{"AUX 0 (First port)", "AUX 1 (Second port)", "AUX 2 (Third port)"} F0 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizChan = { input+1 }
 
 ; Get VFD type
 if { var.wizVFDType == null || var.wizReset }
-    M291 P{"What type of VFD do you have?" R"ArborCtl: Configuration Wizard"} S4 T0 K{global.arborAvailableModels} F0 J2
+    M291 P{"What type of VFD do you have?"} R"ArborCtl: Configuration Wizard" S4 T0 K{global.arborAvailableModels} F0 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizVFDType = { global.arborAvailableModels[input] }
