@@ -29,13 +29,19 @@ if { !exists(param.S) }
     abort { "ArborCtl: Shihlin-SL3 - No spindle specified!" }
 
 if { !exists(param.T) }
-    abort { "ArborCtl: Shihlin-SL3 - No spindle minimum speed specified!" }
+    abort { "ArborCtl: Shihlin-SL3 - No spindle minimum frequency specified!" }
 
 if { !exists(param.E) }
-    abort { "ArborCtl: Shihlin-SL3 - No spindle maximum speed specified!" }
+    abort { "ArborCtl: Shihlin-SL3 - No spindle maximum frequency specified!" }
 
 if { param.T > param.E }
-    abort { "ArborCtl: Shihlin-SL3 - Spindle minimum speed cannot be greater than maximum speed!" }
+    abort { "ArborCtl: Shihlin-SL3 - Spindle minimum frequency cannot be greater than maximum frequency!" }
+
+if { param.E > 599.9 }
+    abort { "ArborCtl: Shihlin-SL3 - Spindle maximum frequency " ^ param.E ^ " cannot be greater than 599.9Hz - are you sure you set the right number of poles and spindle limits in RRF?" }
+
+if { param.T < 0 || param.E < 0 }
+    abort { "ArborCtl: Shihlin-SL3 - Spindle minimum and maximum frequency must be positive!" }
 
 if { !exists(param.W) }
     abort { "ArborCtl: Shihlin-SL3 - No motor rated power specified!" }
@@ -180,12 +186,12 @@ while { iterations < #var.statusVector }
     if { var.statusVector[iterations] == true }
         set var.successCount = { var.successCount + 1 }
 
-echo { "ArborCtl: Shihlin-SL3 - Configuration complete. " ^ var.successCount ^ " of " ^ #global.sl3ConfigParams ^ " batches set successfully." }
-
+if { var.successCount == 0}
+    M291 P{"VFD Configuration <b>failed</b>.<br/>No config batches were set successfully."} R"ArborCtl: Shihlin-SL3" S0 T5
 if { var.successCount < #global.sl3ConfigParams }
     echo { "ArborCtl: Shihlin-SL3 - Warning: Some parameters could not be set. Check VFD communication." }
 else
-    echo { "ArborCtl: Shihlin-SL3 - VFD successfully configured!" }
+    M291 P{"VFD Configuration <b>successful</b>.<br/>" ^ var.successCount ^ " of " ^ #global.sl3ConfigParams ^ " config batches set successfully."} R"ArborCtl: Shihlin-SL3" S0 T5
 
     ; Restart the VFD to apply settings if requested
     M291 P"Configuration complete. Restarting VFD to apply settings..." R"ArborCtl: Shihlin-SL3" S0 T5

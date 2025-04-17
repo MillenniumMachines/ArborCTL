@@ -16,18 +16,18 @@ var wizReset = false
 
 ; Configuration options
 var wizChan = null
-var wizVFDType = null
-var wizVFDAddr = null
+var wizType = null
+var wizAddr = null
 var wizSpdlID = null
-var wizMotorPwr = null   ; W
-var wizMotorPoles = null ; P
-var wizMotorVolts = null ; V
-var wizMotorFreq = null  ; F
-var wizMotorAmps = null  ; I
-var wizMotorSpd = null   ; R
-var wizBaudRate = null   ; Baud rate for UART
+var wizMotorW = null ; W
+var wizMotorU = null ; P
+var wizMotorV = null ; V
+var wizMotorF = null ; F
+var wizMotorI = null ; I
+var wizMotorR = null ; R
+var wizBaud = null   ; Baud rate for UART
 
-M291 P{"Welcome to ArborCtl! This wizard will walk you through VFD configuration.<br/>You can run this wizard again using <b>G8001</b> or clicking the <b>""Run ArborCtl Configuration Wizard""</b> macro."} R"ArborCtl: Configuration Wizard" S3 T0 J2
+M291 P{"Welcome to ArborCtl! This wizard will walk you through VFD configuration.<br/>You can run this wizard again using <b>G8001</b> or clicking the <b>Run ArborCtl Configuration Wizard</b> macro."} R"ArborCtl: Configuration Wizard" S3 T0 J2
 if { result == -1 }
     abort { "ArborCtl: Operator aborted configuration wizard!" }
 
@@ -50,18 +50,18 @@ if { var.wizChan == null || var.wizReset }
     set var.wizChan = { input+1 }
 
 ; Get VFD type
-if { var.wizVFDType == null || var.wizReset }
+if { var.wizType == null || var.wizReset }
     M291 P{"What type of VFD do you have?"} R"ArborCtl: Configuration Wizard" S4 T0 K{global.arborAvailableModels} F0 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
-    set var.wizVFDType = { global.arborAvailableModels[input] }
+    set var.wizType = { global.arborAvailableModels[input] }
 
 ; Get VFD address
-if { var.wizVFDAddr == null || var.wizReset }
+if { var.wizAddr == null || var.wizReset }
     M291 P{"What is the Modbus address of your VFD?<br/><br/>This is typically 1, but can be changed in your VFD settings."} R"ArborCtl: Configuration Wizard" S5 T0 L1 H247 F1 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
-    set var.wizVFDAddr = { input }
+    set var.wizAddr = { input }
 
 ; Get spindle ID
 ; Look up configured spindles. If only one spindle is configured, use that one.
@@ -80,57 +80,59 @@ if { var.wizSpdlID == null || var.wizReset }
     if { var.wizSpdlID == null }
         abort { "ArborCtl: No spindle selected! You must bind a configured RRF spindle to this VFD." }
 
-; Get Spindle Min/Max RPM
-var wizSpdlMin = { spindles[var.wizSpdlID].min }
-var wizSpdlMax = { spindles[var.wizSpdlID].max }
+
 
 ; Get motor parameters first so we can pass them to the VFD configuration file
-if { var.wizMotorPwr == null || var.wizReset }
+if { var.wizMotorW == null || var.wizReset }
     M291 P{"What is the rated power of your motor?<br/><br/>Enter the value in kW."} R"ArborCtl: Configuration Wizard" S6 T0 L0 H100 F1.5 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
-    set var.wizMotorPwr = { input }
+    set var.wizMotorW = { input }
 
-if { var.wizMotorPoles == null || var.wizReset }
+if { var.wizMotorU == null || var.wizReset }
     M291 P{"How many poles does your motor have?<br/><br/>Most induction motors have either 2 or 4 poles."} R"ArborCtl: Configuration Wizard" S4 T0 K{"2", "4"} F0 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
-    set var.wizMotorPoles = { (input+1)*2 }
+    set var.wizMotorU = { (input+1)*2 }
 
-if { var.wizMotorVolts == null || var.wizReset }
+; Get Spindle Min/Max RPM and convert to max / min frequency based on pole count
+var wizSpdlT = { ceil((spindles[var.wizSpdlID].min / 120) * var.wizMotorU) }
+var wizSpdlE = { ceil((spindles[var.wizSpdlID].max / 120) * var.wizMotorU) }
+
+if { var.wizMotorV == null || var.wizReset }
     M291 P{"What is the rated voltage of your motor?<br/><br/>Enter the value in volts."} R"ArborCtl: Configuration Wizard" S6 T0 L0 H1000 F220 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
-    set var.wizMotorVolts = { input }
+    set var.wizMotorV = { input }
 
-if { var.wizMotorFreq == null || var.wizReset }
+if { var.wizMotorF == null || var.wizReset }
     M291 P{"What is the rated frequency of your motor?<br/><br/>Enter the value in Hz."} R"ArborCtl: Configuration Wizard" S6 T0 L0 H800 F400 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
-    set var.wizMotorFreq = { input }
+    set var.wizMotorF = { input }
 
-if { var.wizMotorAmps == null || var.wizReset }
+if { var.wizMotorI == null || var.wizReset }
     M291 P{"What is the rated current of your motor?<br/><br/>Enter the value in amperes."} R"ArborCtl: Configuration Wizard" S6 T0 L0 H100 F10 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
-    set var.wizMotorAmps = { input }
+    set var.wizMotorI = { input }
 
-if { var.wizMotorSpd == null || var.wizReset }
+if { var.wizMotorR == null || var.wizReset }
     ; Calculate default RPM based on frequency and poles
-    var defaultRPM = { ceil((var.wizMotorFreq * 60 * 2) / var.wizMotorPoles) }
+    var defaultRPM = { ceil((var.wizMotorF * 60 * 2) / var.wizMotorU) }
     M291 P{"What is the rated rotation speed of your motor?<br/><br/>Enter the value in RPM."} R"ArborCtl: Configuration Wizard" S5 T0 L0 H24000 F{var.defaultRPM} J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
-    set var.wizMotorSpd = { input }
+    set var.wizMotorR = { input }
 
 ; Get baud rate for the UART port
-if { var.wizBaudRate == null || var.wizReset }
+if { var.wizBaud == null || var.wizReset }
     var baudRateStrings = {"4800", "9600", "19200", "38400", "57600"}
     var baudRates       = {4800, 9600, 19200, 38400, 57600}
     M291 P{"Select the baud rate for your VFD communication:<br/><br/>Most VFDs work well with 38400 or 19200."} R"ArborCtl: Configuration Wizard" S4 K{var.baudRateStrings} F3 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
-    set var.wizBaudRate = { var.baudRates[input] }
+    set var.wizBaud = { var.baudRates[input] }
 
 ; Ask user if they want to configure VFD now
 M291 P{"Do you want to configure your VFD and motor settings now?<br/><br/>The VFD must be correctly connected and powered on."} R"ArborCtl: Configuration Wizard" S4 T0 K{"Yes", "No"} F0 J2
@@ -138,9 +140,9 @@ if { result == -1 }
     abort { "ArborCtl: Operator aborted configuration wizard!" }
 
 if { input == 0 }
-    var configFile = { "arborctl/config/" ^ var.wizVFDType ^ ".g" }
+    var cfgFile = { "arborctl/config/" ^ var.wizType ^ ".g" }
     ; Configure the VFD - the VFD-specific file will handle both manual configuration guidance and automated settings
-    M98 P{var.configFile} B{var.wizBaudRate} C{var.wizChan} A{var.wizVFDAddr} S{var.wizSpdlID} W{var.wizMotorPwr} U{var.wizMotorPoles} V{var.wizMotorVolts} F{var.wizMotorFreq} I{var.wizMotorAmps} R{var.wizMotorSpd} T{var.wizSpdlMin} E{var.wizSpdlMax}
+    M98 P{var.cfgFile} B{var.wizBaud} C{var.wizChan} A{var.wizAddr} S{var.wizSpdlID} W{var.wizMotorW} U{var.wizMotorU} V{var.wizMotorV} F{var.wizMotorF} I{var.wizMotorI} R{var.wizMotorR} T{var.wizSpdlT} E{var.wizSpdlE}
     ; Add other VFD types here in the future
 
 ; Create the actual user variables file
@@ -153,12 +155,12 @@ echo >>{var.wizUVF} ""
 ; Write the user-friendly configuration
 echo >>{var.wizUVF} "; ArborCtl Configuration"
 echo >>{var.wizUVF} "; UART Configuration"
-echo >>{var.wizUVF} {"M575 P" ^ var.wizChan ^ " B" ^ var.wizBaudRate ^ " S7 ; Configure UART for Modbus RTU"}
+echo >>{var.wizUVF} {"M575 P" ^ var.wizChan ^ " B" ^ var.wizBaud ^ " S7 ; Configure UART for Modbus RTU"}
 echo >>{var.wizUVF} ""
 
 ; VFD Configuration
 echo >>{var.wizUVF} "; VFD Configuration"
-echo >>{var.wizUVF} {"set global.arborVFDConfig[" ^ var.wizSpdlID ^ "] = {""" ^ var.wizVFDType ^ """, " ^ var.wizChan ^ ", " ^ var.wizVFDAddr ^ "} ; VFD configuration"}
+echo >>{var.wizUVF} {"set global.arborVFDConfig[" ^ var.wizSpdlID ^ "] = {""" ^ var.wizType ^ """, " ^ var.wizChan ^ ", " ^ var.wizAddr ^ "} ; VFD configuration"}
 echo >>{var.wizUVF} ""
 
 M999

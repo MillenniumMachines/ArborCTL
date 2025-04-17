@@ -39,10 +39,9 @@ set global.sl3ConfigParams[4] = { {10501, {ceil(param.W * 100), param.U, param.V
 ; ========== FREQUENCY PARAMETERS ==========
 ; P.3/01-03 - Base frequency: 400.00Hz
 
-; Calculate max and min frequency based on param.T and param.E (min/max spindle speed in RPM)
-; Take into account motor poles and convert to Hz, then multiply by 100
-var minFreq = { ceil((param.T / 120) * param.U * 100) }
-var maxFreq = { ceil((param.E / 120) * param.U * 100) }
+; Multiply by 100 to match VFD register format
+var minFreq = { ceil(param.T * 100) }
+var maxFreq = { ceil(param.E * 100) }
 
 set global.sl3ConfigParams[5] = { {10103, {var.maxFreq,}} }
 
