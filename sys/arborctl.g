@@ -39,3 +39,16 @@ if { fileexists("0:/sys/arborctl-user-vars.g.example") }
 ; Load user vars
 if { fileexists("0:/sys/arborctl-user-vars.g") }
     M98 P"arborctl-user-vars.g"
+
+; Verify each ArborCtl configured spindle is a valid RRF Spindle
+while { iterations < #global.arborVFDConfig }
+    if { global.arborVFDConfig[iterations] == null }
+        continue
+
+    if { spindles[iterations].state == "unconfigured" }
+        abort { "ArborCtl: Spindle " ^ iterations ^ " is configured in ArborCtl but unconfigured in RRF!" }
+
+; Allow ArborCtl macros to run.
+set global.arborctlLdd = true
+
+echo { "ArborCtl: Loaded " ^ global.arborctlVer }
