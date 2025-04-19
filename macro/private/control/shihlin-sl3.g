@@ -142,14 +142,24 @@ elif { var.shouldRun }
     var maxFreq    = { global.arborState[param.S][3][0] }
     var minFreq    = { global.arborState[param.S][3][1] }
 
-    ; RPM = 120 x f / poles.
-    ; f = RPM x poles / 120
-    ; Adjust for the conversion factor and divide by
-    ; 60 to normalise to Hz.
+    ; If the VFD conversion factor is set to 60, then we can simply give the VFD
+    ; the spindle RPM and it will calculate the frequency for us.
+    ; If we do this calculation ourselves, there is a possibility of slight
+    ; inaccuracy as we need to send round integers to the VFD.
+    var newFreq = { abs(spindles[param.S].current) }
 
-    ; Account for new convFactor
-    ; Clamp the frequency to the limits and ensure we get a valid result
-    var newFreq = { ceil(min(var.maxFreq, max(var.minFreq, ((abs(spindles[param.S].current) * var.numPoles) / 120))) * var.convFactor) }
+    if { var.convFactor != 60 }
+        ; RPM = 120 x f / poles.
+        ; f = RPM x poles / 120
+        ; Adjust for the conversion factor and divide by
+        ; 60 to normalise to Hz.
+
+        ; Account for new convFactor
+        ; Clamp the frequency to the limits and ensure we get a valid result
+        ; We have to split this into multiple variables to avoid stack overflow
+        var freqT = { abs(spindles[param.S].current) * var.numPoles) / 120 }
+        var freqL = { min(var.maxFreq, max(var.minFreq, var.freqT)) }
+        set var.newFreq = { ceil(var.freqL * var.convFactor) }
 
     ; Set input frequency if it doesn't match the RRF value
     if { var.vfdInputFreq != var.newFreq }

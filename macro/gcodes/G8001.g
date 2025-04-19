@@ -96,8 +96,8 @@ if { var.wizMotorU == null || var.wizReset }
     set var.wizMotorU = { (input+1)*2 }
 
 ; Get Spindle Min/Max RPM and convert to max / min frequency based on pole count
-var wizSpdlT = { ceil((spindles[var.wizSpdlID].min / 120) * var.wizMotorU) }
-var wizSpdlE = { ceil((spindles[var.wizSpdlID].max / 120) * var.wizMotorU) }
+var wizSpdlT = { (spindles[var.wizSpdlID].min / 120) * var.wizMotorU }
+var wizSpdlE = { (spindles[var.wizSpdlID].max / 120) * var.wizMotorU }
 
 if { var.wizMotorV == null || var.wizReset }
     M291 P{"What is the rated voltage of your motor?<br/><br/>Enter the value in volts."} R"ArborCtl: Configuration Wizard" S6 T0 L0 H1000 F220 J2
