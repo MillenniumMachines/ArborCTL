@@ -1,7 +1,10 @@
 ; arborctl-vars.g - Variables required for ArborCtl RS485 spindle control
 
 ; Available Spindle / VFD models
-global arborAvailableModels = { "shihlin-sl3", "huanyang-hy02d223b" }
+global arborAvailableModels = { "Shihlin SL3", "Huanyang HY02D223", "Yalang YL620-A" }
+global arborModelInternalNames = { "shihlin-sl3", "huanyang-hy02d223b", "yalang-yl620a" }
+global arborModelDefaultAddress = { 1, 1, 10 }
+global arborModelDefaultBaudRateIndex = { 1, 1, 2 }
 
 global arborMaxLoad = 80
 
@@ -18,8 +21,8 @@ global arborState = { vector(limits.spindles, { null, false, false, null, false 
 ; These are public and intended for external script use
 
 ; Configuration variables - all in one vector
-; [0]: VFD type string (e.g. "shihlin-sl3")
-; [1]: UART channel number
+; [0]: VFD type index
+; [1]: UART channel
 ; [2]: Modbus address
 global arborVFDConfig = { vector(limits.spindles, null) }
 
