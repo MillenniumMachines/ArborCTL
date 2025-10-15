@@ -17,6 +17,7 @@ var wizReset = false
 ; Configuration options
 var wizChan = null
 var wizType = null
+var wizTypeIndex = null
 var wizAddr = null
 var wizSpdlID = null
 var wizMotorW = null ; W
@@ -54,11 +55,13 @@ if { var.wizType == null || var.wizReset }
     M291 P{"What type of VFD do you have?"} R"ArborCtl: Configuration Wizard" S4 T0 K{global.arborAvailableModels} F0 J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
+    set var.wizTypeIndex = { input }
     set var.wizType = { global.arborAvailableModels[input] }
 
 ; Get VFD address
 if { var.wizAddr == null || var.wizReset }
-    M291 P{"What is the Modbus address of your VFD?<br/><br/>This is typically 1, but can be changed in your VFD settings."} R"ArborCtl: Configuration Wizard" S5 T0 L1 H247 F1 J2
+    var default = global.arborModelDefaultAddress[var.wizTypeIndex]
+    M291 P{"What is the Modbus address of your VFD?<br/><br/>This is typically " ^ var.default ^ ", but can be changed in your VFD settings."} R"ArborCtl: Configuration Wizard" S5 T0 L1 H247 F{var.default} J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizAddr = { input }
@@ -95,10 +98,6 @@ if { var.wizMotorU == null || var.wizReset }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizMotorU = { (input+1)*2 }
 
-; Get Spindle Min/Max RPM and convert to max / min frequency based on pole count
-var wizSpdlT = { (spindles[var.wizSpdlID].min / 120) * var.wizMotorU }
-var wizSpdlE = { (spindles[var.wizSpdlID].max / 120) * var.wizMotorU }
-
 if { var.wizMotorV == null || var.wizReset }
     M291 P{"What is the rated voltage of your motor?<br/><br/>Enter the value in volts."} R"ArborCtl: Configuration Wizard" S6 T0 L0 H1000 F220 J2
     if { result == -1 }
@@ -111,8 +110,13 @@ if { var.wizMotorF == null || var.wizReset }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizMotorF = { input }
 
+; Get Spindle Min/Max RPM and convert to max / min frequency based on pole count
+var wizSpdlT = { min(var.wizMotorF, ceil((spindles[var.wizSpdlID].min / 120) * var.wizMotorU)) }
+var wizSpdlE = { min(var.wizMotorF, ceil((spindles[var.wizSpdlID].max / 120) * var.wizMotorU)) }
+
 if { var.wizMotorI == null || var.wizReset }
-    M291 P{"What is the rated current of your motor?<br/><br/>Enter the value in amperes."} R"ArborCtl: Configuration Wizard" S6 T0 L0 H100 F10 J2
+    var defaultCurrent = { ceil(var.wizMotorW * 1000 / var.wizMotorV / sqrt(2)) }
+    M291 P{"What is the rated current of your motor?<br/><br/>Enter the value in amperes."} R"ArborCtl: Configuration Wizard" S6 T0 L0 H100 F{var.defaultCurrent} J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizMotorI = { input }
@@ -129,7 +133,9 @@ if { var.wizMotorR == null || var.wizReset }
 if { var.wizBaud == null || var.wizReset }
     var baudRateStrings = {"4800", "9600", "19200", "38400", "57600"}
     var baudRates       = {4800, 9600, 19200, 38400, 57600}
-    M291 P{"Select the baud rate for your VFD communication:<br/><br/>Most VFDs work well with 38400 or 19200."} R"ArborCtl: Configuration Wizard" S4 K{var.baudRateStrings} F3 J2
+    var defaultIndex = global.arborModelDefaultBaudRateIndex[var.wizTypeIndex]
+    var default = var.baudRateStrings[var.defaultIndex]
+    M291 P{"Select the baud rate for your VFD communication:<br/><br/>Your VFD's default baud rate is " ^ var.default ^ ", but can be changed in your VFD settings."} R"ArborCtl: Configuration Wizard" S4 K{var.baudRateStrings} F{var.defaultIndex} J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
     set var.wizBaud = { var.baudRates[input] }
@@ -140,7 +146,7 @@ if { result == -1 }
     abort { "ArborCtl: Operator aborted configuration wizard!" }
 
 if { input == 0 }
-    var cfgFile = { "arborctl/config/" ^ var.wizType ^ ".g" }
+    var cfgFile = { "arborctl/config/" ^ global.arborModelInternalNames[var.wizTypeIndex] ^ ".g" }
     ; Configure the VFD - the VFD-specific file will handle both manual configuration guidance and automated settings
     M98 P{var.cfgFile} B{var.wizBaud} C{var.wizChan} A{var.wizAddr} S{var.wizSpdlID} W{var.wizMotorW} U{var.wizMotorU} V{var.wizMotorV} F{var.wizMotorF} I{var.wizMotorI} R{var.wizMotorR} T{var.wizSpdlT} E{var.wizSpdlE}
     ; Add other VFD types here in the future
@@ -160,7 +166,7 @@ echo >>{var.wizUVF} ""
 
 ; VFD Configuration
 echo >>{var.wizUVF} "; VFD Configuration"
-echo >>{var.wizUVF} {"set global.arborVFDConfig[" ^ var.wizSpdlID ^ "] = {""" ^ var.wizType ^ """, " ^ var.wizChan ^ ", " ^ var.wizAddr ^ "} ; VFD configuration"}
+echo >>{var.wizUVF} {"set global.arborVFDConfig[" ^ var.wizSpdlID ^ "] = {" ^ var.wizTypeIndex ^ ", " ^ var.wizChan ^ ", " ^ var.wizAddr ^ "} ; VFD configuration"}
 echo >>{var.wizUVF} ""
 
 M999

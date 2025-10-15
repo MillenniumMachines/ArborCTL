@@ -19,10 +19,10 @@ while { iterations < limits.spindles }
     if { var.spindleModel == null || var.spindleChannel == null || var.spindleAddr == null }
         continue
 
-    var modelFile = { "arborctl/control/" ^ var.spindleModel ^ ".g" }
+    var modelFile = { "arborctl/control/" ^ global.arborModelInternalNames[var.spindleModel] ^ ".g" }
 
     if { !fileexists("0:/sys/" ^ var.modelFile ) }
-        echo { "ArborCtl: VFD model file not found for spindle " ^ iterations ^ "!" }
+        echo { "ArborCtl: VFD model file '0:/sys/" ^ var.modelFile ^ "' not found for spindle " ^ iterations ^ "!" }
         continue
 
     ; Run the appropriate VFD control file for the given spindle
