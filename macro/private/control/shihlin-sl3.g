@@ -10,7 +10,6 @@ if { !exists(param.C) }
 if { !exists(param.S) }
     abort { "ArborCtl: No spindle specified!" }
 
-var cmdWait      = 10
 var motorAddr    = 10501
 var limitsAddr   = 10100
 var freqConvAddr = 10008
@@ -23,16 +22,16 @@ var errorAddr    = 4103
 if { global.arborState[param.S][0] == null }
     ; 0 = Motor Rated Power, 1 = Motor Poles, 2 = Motor Rated Voltage,
     ; 3 = Motor Rated Frequency, 4 = Motor Rated Current, 5 = Motor Rotation Speed
-    M261.1 P{param.C} A{param.A} F3 R{var.motorAddr} B6 V"motorCfg"
-    G4 P{var.cmdWait}
+    M263 P{param.C} A{param.A} F3 R{var.motorAddr} B6 
+    var motorCfg = { global.returnVal }
 
     ; 0 = Max Frequency, 1 = Min Frequency
-    M261.1 P{param.C} A{param.A} F3 R{var.limitsAddr} B2 V"spindleLimits"
-    G4 P{var.cmdWait}
+    M263 P{param.C} A{param.A} F3 R{var.limitsAddr} B2
+    var spindleLimits = { global.returnVal }
 
     ; 0 = Frequency Conversion Factor
-    M261.1 P{param.C} A{param.A} F3 R{var.freqConvAddr} B1 V"freqConv"
-    G4 P{var.cmdWait}
+    M263 P{param.C} A{param.A} F3 R{var.freqConvAddr} B1
+    var freqConv = { global.returnVal }
 
     if { var.motorCfg == null || var.spindleLimits == null || var.freqConv == null }
         echo { "Unable to load necessary data from VFD for spindle control!"}
@@ -66,19 +65,17 @@ var shouldRun = { (spindles[param.S].state == "forward" || spindles[param.S].sta
 ; Read status bits, frequency, output data
 ; 0 = Status, 1 = Req Freq, 2 = Output Freq, 3 = Output Current,
 ; 4 = Output Voltage, 5 = Error 1, 6 = Error 2
-M261.1 P{param.C} A{param.A} F3 R{var.statusAddr} B7 V"spindleState"
-G4 P{var.cmdWait}
+M263 P{param.C} A{param.A} F3 R{var.statusAddr} B7 
+var spindleState = { global.returnVal }
 
 ; Read output power
-M261.1 P{param.C} A{param.A} F3 R{var.powerAddr} B1 V"spindlePower"
-G4 P{var.cmdWait}
+M263 P{param.C} A{param.A} F3 R{var.powerAddr} B1 
+var spindlePower = { global.returnVal }
 
 ; Make sure we have all the data we need.
 if { var.spindleState == null }
-    M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B0
-    G4 P{var.cmdWait}
-    M260.1 P{param.C} A{param.A} F6 R{var.freqAddr} B0
-    G4 P{var.cmdWait}
+    M262 P{param.C} A{param.A} F6 R{var.statusAddr} B0
+    M262 P{param.C} A{param.A} F6 R{var.freqAddr} B0
     M5
     abort { "ArborCtl: Failed to read spindle state!" }
 
@@ -114,8 +111,7 @@ else
 
 ; Check for invalid spindle state and call emergency stop on the VFD
 if { (var.vfdRunning && !var.vfdForward && !var.vfdReverse) || (!var.vfdRunning && (var.vfdForward || var.vfdReverse)) }
-    M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B128
-    G4 P{var.cmdWait}
+    M262 P{param.C} A{param.A} F6 R{var.statusAddr} B128
     echo { "ArborCtl: Invalid spindle state detected - emergency VFD stop issued!" }
     M112
 
@@ -125,11 +121,9 @@ var commandChange = false
 if { !var.shouldRun && var.vfdRunning }
     echo { "ArborCtl: Stopping spindle " ^ param.S }
     ; Stop spindle - Command 0 = Stop
-    M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B0
-    G4 P{var.cmdWait}
+    M262 P{param.C} A{param.A} F6 R{var.statusAddr} B0
     ; Set frequency to 0
-    M260.1 P{param.C} A{param.A} F6 R{var.freqAddr} B0
-    G4 P{var.cmdWait}
+    M262 P{param.C} A{param.A} F6 R{var.freqAddr} B0
 
     set var.commandChange = true
 elif { var.shouldRun }
@@ -163,20 +157,17 @@ elif { var.shouldRun }
 
     ; Set input frequency if it doesn't match the RRF value
     if { var.vfdInputFreq != var.newFreq }
-        M260.1 P{param.C} A{param.A} F6 R{var.freqAddr} B{var.newFreq}
-        G4 P{var.cmdWait}
+        M262 P{param.C} A{param.A} F6 R{var.freqAddr} B{var.newFreq}
         set var.commandChange = true
 
     ; Set spindle direction forward if needed
     if { spindles[param.S].state == "forward" && (!var.vfdRunning || !var.vfdForward) }
-        M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B2
-        G4 P{var.cmdWait}
+        M262 P{param.C} A{param.A} F6 R{var.statusAddr} B2
         set var.commandChange = true
 
     ; Set spindle direction reverse if needed
     elif { spindles[param.S].state == "reverse" && (!var.vfdRunning || !var.vfdReverse) }
-        M260.1 P{param.C} A{param.A} F6 R{var.statusAddr} B4
-        G4 P{var.cmdWait}
+        M262 P{param.C} A{param.A} F6 R{var.statusAddr} B4
         set var.commandChange = true
 
 ; Calculate current RPM from output frequency
