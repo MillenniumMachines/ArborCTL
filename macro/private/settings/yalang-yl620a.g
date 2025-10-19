@@ -2,7 +2,7 @@
 ; This file stores the register addresses and values for the Yalang YL620-A VFD
 
 if { !exists(global.yl620aSpecialParams) }
-    ;                                Harfware Version   Reset                Reboot
+    ;                                Hardware Version   Reset                Reboot
     global yl620aSpecialParams = { { 0x0d01, {null}}, { 0x0013, {0x000a}}, { null, {null}} }
 
 ; Pre-allocate the configuration parameters vector - increased to handle split params
