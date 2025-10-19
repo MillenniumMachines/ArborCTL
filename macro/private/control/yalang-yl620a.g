@@ -70,11 +70,17 @@ var shouldRun = { (spindles[param.S].state == "forward" || spindles[param.S].sta
 ; 8 = Acceleration/Deceleration Flags
 M261.1 P{param.C} A{param.A} F3 R{var.stateBytesAddr} B9 V"stateBytes"
 G4 P{var.cmdWait}
+var stateBytes = { global.returnVal }
+
+if { var.stateBytes == null }
+    echo { "ArborCtl: VFD stopped responding to inputs."}
+    set global.arborState[param.S][4] = true
+    M99
 
 var error = var.stateBytes[0]
 
-if { var.stateBytes == null || var.error == null }
-    echo { "ArborCtl: VFD stopped responding to inputs."}
+if { var.error == null }
+    echo { "ArborCtl: VFD in error state."}
     set global.arborState[param.S][4] = true
     M99
 
@@ -143,7 +149,6 @@ var commandChange = false
 
 ; Stop spindle as early as possible if it should not be running
 if { !var.shouldRun && var.vfdRunning }
-    echo { "ArborCtl: Stopping spindle " ^ param.S }
     ; Stop spindle - Command 0 = Stop
     M260.1 P{param.C} A{param.A} F6 R{var.setCommandAddr} B{0x0001}
     G4 P{var.cmdWait}
