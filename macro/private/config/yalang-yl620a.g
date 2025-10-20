@@ -135,7 +135,6 @@ while { iterations < #global.yl620aConfigParams }
 
     ; Create display string for logging
     var displayStr = { "ArborCtl: Yalang YL620-A - Writing batch " ^ (iterations + 1) ^ " - Address " ^ var.startAddr ^ ": " }
-    echo { "A: " ^ var.displayStr }
 
     ; Build value string for display purposes only
     var valueStr = ""
