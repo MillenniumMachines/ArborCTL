@@ -84,51 +84,49 @@ if { var.error == null }
     set global.arborState[param.S][4] = true
     M99
 
-var spindlePower = var.stateBytes[4] * var.stateBytes[5]
+var spindlePower = { var.stateBytes[4] * var.stateBytes[5] }
 
 ; Check for VFD errors
 if { var.stateBytes[0] != 0 }
     echo { "ArborCtl: VFD Error detected. Code=" ^ var.stateBytes[0] }
-    var i = 0
     while {var.stateBytes[0] > 0 }
         var bitPresent = { mod(var.stateBytes[0], 2) == 1 }
         if { var.bitPresent }
-            if {var.i == 0}
+            if {iterations == 0}
                 echo { "ArborCtl: Too Low Voltage - Supply voltage has dropped too low."}
-            elif {var.i == 1}
+            elif {iterations == 1}
                 echo { "ArborCtl: Too High Voltage - Supply voltage has risen too high."}
-            elif {var.i == 2}
+            elif {iterations == 2}
                 echo { "ArborCtl: Overcurrent - When motor was running, current levels rose too high."}
-            elif {var.i == 3}
+            elif {iterations == 3}
                 echo { "ArborCtl: External PWM Error - An error in the CPU's PWM circuitry has occurred."}
-            elif {var.i == 4}
+            elif {iterations == 4}
                 echo { "ArborCtl: Short Circuit Alarm - A short circuit has occurred."}
-            elif {var.i == 5}
+            elif {iterations == 5}
                 echo { "ArborCtl: External Fault - An external fault has been indicated to the VFD."}
-            elif {var.i == 6}
+            elif {iterations == 6}
                 echo { "ArborCtl: Internal Data Storage Error - An error has occurred in the VFD's internal data storage."}
-            elif {var.i == 7}
+            elif {iterations == 7}
                 echo { "ArborCtl: Overheating - The VFD is overheating."}
-            elif {var.i == 8}
+            elif {iterations == 8}
                 echo { "ArborCtl: Temperature Detection Error - The VFD encountered errors while trying to ascertain its temperature."}
-            elif {var.i == 10}
+            elif {iterations == 10}
                 echo { "ArborCtl: Powering Down - The VFD is in power down mode."}
-            elif {var.i == 11}
+            elif {iterations == 11}
                 echo { "ArborCtl: RS485 Communication Interrupted - RS485 communication was interrupted for too long."}
-            elif {var.i == 12}
+            elif {iterations == 12}
                 echo { "ArborCtl: Parametric Error."}
-            elif {var.i == 15}
+            elif {iterations == 15}
                 echo { "ArborCtl: Motor Overheating - The motor is overheating."}
             else
                 echo { "ArborCtl: Unknown Error."}
-        set var.i = { var.i+1 }
         set var.stateBytes[0] = { floor(var.stateBytes[0] / 2) }
     set global.arborState[param.S][4] = true
     M99
 
 ; Extract status bits from stateBytes using modulo and division
 ; 
-var vfdRunning = { var.stateBytes[1] != 0}
+var vfdRunning = { var.stateBytes[1] != 0 }
 var vfdForward = { mod(floor(var.stateBytes[1] / 2), 2) == 1 }
 var vfdReverse = { mod(floor(var.stateBytes[1] / 4), 2) == 1 }
 var vfdSpeedReached = { var.stateBytes[8] == 0 }
@@ -159,21 +157,13 @@ if { !var.shouldRun && var.vfdRunning }
     set var.commandChange = true
 elif { var.shouldRun }
     ; Calculate the frequency to set based on the rpm requested,
-    ; the max and min frequencies, the number of poles
-    ; and the conversion factor.
-    ; The conversion factor is the RPM that the spindle runs at with a 60Hz input.
+    ; the max and min frequencies, and the number of poles.
     var numPoles   = { global.arborState[param.S][0][2] }
     var maxFreq    = { global.arborState[param.S][3][0] }
     var minFreq    = { global.arborState[param.S][3][1] }
 
     ; RPM = 120 x f / poles.
     ; f = RPM x poles / 120
-    ; Adjust for the conversion factor and divide by
-    ; 60 to normalise to Hz.
-
-    ; Account for new convFactor
-    ; Clamp the frequency to the limits and ensure we get a valid result
-    
     var newFreq = { ceil(min(var.maxFreq, max(var.minFreq, (abs(spindles[param.S].current) * var.numPoles) / 120))) * 10 }
 
     ; Set input frequency if it doesn't match the RRF value
