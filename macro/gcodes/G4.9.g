@@ -19,7 +19,7 @@ if { !exists(param.S) }
 if { param.S < 0 || param.S >= limits.spindles || spindles[param.S] == null || spindles[param.S].state == "unconfigured" }
     abort { "ArborCtl: Spindle ID " ^ param.S ^ " is not valid!" }
 
-; Immediately run the spindle control algorithm to make sure that we're actually spinning up the spindle'
+; Immediately run the spindle control algorithm to make sure that we're actually spinning up the spindle
 M98 P"arborctl/control-spindle.g" S{param.S}
 
 var maxWait = { (exists(param.M) ? param.M : 30) }
@@ -51,7 +51,7 @@ while { var.endTime > state.upTime * 1000 + state.msUpTime }
     if { !var.desiredState && !var.isStable }
         set var.desiredState = { true }
         echo { "ArborCtl: Spindle " ^ param.S ^ " is unstable, waiting for action to complete..." }
-        
+
     ; Spindle state has transitioned to desired state
     if { var.isStable == var.desiredState && var.wasStable != var.desiredState }
         ; If spindle is in desired state and state is true,

@@ -8,6 +8,8 @@ global arborModelDefaultBaudRateIndex = { 1, 1, 2 }
 
 global arborMaxLoad = 80
 
+global arborMaxRetries = 3
+
 ; Internal state structure - used by ArborCtl implementation only
 ; This structure contains internal data not meant for external use
 ; 0: VFD-specific data storage
