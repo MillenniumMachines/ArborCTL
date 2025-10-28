@@ -76,8 +76,8 @@ var reset = { exists(param.D) && param.D == 1 }
 
 while { var.vfdModelDetected == null }
     ; Check if the VFD is powered on and responding
-    M263 P{param.C} A{param.A} F3 R{global.sl3SpecialParams[0][0]} B1 
-    var vfdModel = { global.returnVal }
+    M261.9 P{param.C} A{param.A} F3 R{global.sl3SpecialParams[0][0]} B1
+    var vfdModel = { global.arborRetVal }
 
     if { var.vfdModel != null && var.vfdModel[0] != 0 }
         set var.vfdModelDetected = { var.vfdModel[0] }
@@ -153,7 +153,7 @@ while { iterations < #global.sl3ConfigParams }
     ; Write batch of parameters using Modbus command - pass values vector directly to B parameter
     while { iterations < #var.values }
         echo { "ArborCtl: Shihlin-SL3 - Writing parameter " ^ (iterations + 1) ^ ": " ^ var.values[iterations] }
-        M262 P{param.C} A{param.A} F6 R{var.startAddr + iterations} B{var.values[iterations]}
+        M260.9 P{param.C} A{param.A} F6 R{var.startAddr + iterations} B{var.values[iterations]}
         G4 P{var.waitTime}
 
     ; Verify values were set correctly by reading them back
@@ -163,8 +163,8 @@ while { iterations < #global.sl3ConfigParams }
     ; We must read these one-by-one as reading multiple bytes seems to return
     ; incorrect values for certain registers.
     while { iterations < #var.values }
-        M263 P{param.C} A{param.A} F3 R{var.startAddr + iterations} B1
-        var readValue = { global.returnVal }
+        M261.9 P{param.C} A{param.A} F3 R{var.startAddr + iterations} B1
+        var readValue = { global.arborRetVal }
         G4 P{var.waitTime}
         if { var.readValue == null || #var.readValue != 1 }
             echo { "ArborCtl: Shihlin-SL3 - Readback failed for parameter " ^ (iterations + 1) ^ ": expected " ^ var.values[iterations] }
@@ -196,4 +196,4 @@ else
 
     ; Restart the VFD to apply settings if requested
     M291 P"Configuration complete. Restarting VFD to apply settings..." R"ArborCtl: Shihlin-SL3" S0 T5
-    M262 P{param.C} A{param.A} F6 R{global.sl3SpecialParams[2][0]} B{global.sl3SpecialParams[2][1]}
+    M260.9 P{param.C} A{param.A} F6 R{global.sl3SpecialParams[2][0]} B{global.sl3SpecialParams[2][1]}
