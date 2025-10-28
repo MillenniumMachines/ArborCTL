@@ -6,8 +6,13 @@ global arborModelInternalNames = { "shihlin-sl3", "huanyang-hy02d223b", "yalang-
 global arborModelDefaultAddress = { 1, 1, 10 }
 global arborModelDefaultBaudRateIndex = { 1, 1, 2 }
 
+; Return value for last M260.9 or M261.9 command
+global arborRetVal = { null }
+
+; Maximum load percentage before triggering overload condition 
 global arborMaxLoad = 80
 
+; Maximum number of retries for RS485 communication commands
 global arborMaxRetries = 3
 
 ; Internal state structure - used by ArborCtl implementation only
