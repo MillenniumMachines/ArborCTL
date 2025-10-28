@@ -12,3 +12,6 @@ while {iterations < global.arborMaxRetries}
     if { var.val != null }
         set global.arborRetVal = { var.val }
         M99
+
+if { !exists(param.E) || param.E == 1 }
+    echo { "M261.9: Read from addr " ^ param.A ^ " reg " ^ param.R ^ " failed after " ^ global.arborMaxRetries ^ " attempts." }

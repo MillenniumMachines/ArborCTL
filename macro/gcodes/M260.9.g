@@ -4,7 +4,7 @@
 
 M98 P"arborctl/delay-for-command.g"
 
-while {iterations < global.arborMaxRetries}
+while { iterations < global.arborMaxRetries }
     M260.1 P{param.P} A{param.A} F{param.F} R{param.R} B{param.B}
     M261.1 P{param.P} A{param.A} F3 R{param.R} B{#param.B} V"val"
 
@@ -12,9 +12,13 @@ while {iterations < global.arborMaxRetries}
         continue
 
     var different = { false }
-    while {iterations < #param.B}
-        if {var.val[iterations] != param.B[iterations]}
+    while { iterations < #param.B }
+        if { var.val[iterations] != param.B[iterations] }
             set var.different = { true }
+            break
 
     if { !var.different }
         M99
+
+if { !exists(param.E) || param.E == 1 }
+    echo { "M260.9: Write to addr " ^ param.A ^ " reg " ^ param.R ^ " failed after " ^ global.arborMaxRetries ^ " attempts." }
