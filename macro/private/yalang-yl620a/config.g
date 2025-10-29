@@ -1,4 +1,4 @@
-; config/yalang-yl620-a.g - Yalang YL620-A VFD configuration
+; yalang-yl620a/config.g - Yalang YL620-A VFD configuration
 ; This file implements specific commands for the Yalang YL620-A VFD
 ;
 ; Parameters:
@@ -63,7 +63,7 @@ if { !exists(param.R) }
 
 
 ; Load the settings file which will define global.yl620aConfigParams
-M98 P"arborctl/settings/yalang-yl620a.g" W{param.W} U{param.U} V{param.V} F{param.F} I{param.I} R{param.R} T{param.T} E{param.E}
+M98 P"arborctl/yalang-yl620a/settings.g" W{param.W} U{param.U} V{param.V} F{param.F} I{param.I} R{param.R} T{param.T} E{param.E}
 
 var waitTime = 250
 

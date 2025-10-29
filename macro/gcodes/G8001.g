@@ -146,7 +146,7 @@ if { result == -1 }
     abort { "ArborCtl: Operator aborted configuration wizard!" }
 
 if { input == 0 }
-    var cfgFile = { "arborctl/config/" ^ global.arborModelInternalNames[var.wizTypeIndex] ^ ".g" }
+    var cfgFile = { "arborctl/" ^ global.arborModelInternalNames[var.wizTypeIndex] ^ "/config.g" }
     ; Configure the VFD - the VFD-specific file will handle both manual configuration guidance and automated settings
     M98 P{var.cfgFile} B{var.wizBaud} C{var.wizChan} A{var.wizAddr} S{var.wizSpdlID} W{var.wizMotorW} U{var.wizMotorU} V{var.wizMotorV} F{var.wizMotorF} I{var.wizMotorI} R{var.wizMotorR} T{var.wizSpdlT} E{var.wizSpdlE}
     ; Add other VFD types here in the future

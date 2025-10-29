@@ -1,4 +1,4 @@
-; settings/shihlin-sl3.g - Shihlin SL3 VFD settings
+; shihlin-sl3/settings.g - Shihlin SL3 VFD settings
 ; This file stores the register addresses and values for the Shihlin SL3 VFD
 
 if { !exists(global.sl3SpecialParams) }

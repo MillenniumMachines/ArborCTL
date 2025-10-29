@@ -1,4 +1,4 @@
-; shihlin-sl3.g - Shihlin SL3 VFD implementation
+; shihlin-sl3/control.g - Shihlin SL3 VFD implementation
 ; This file implements specific commands for the Shihlin SL3 VFD
 
 if { !exists(param.A) }
