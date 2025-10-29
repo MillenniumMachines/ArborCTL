@@ -166,6 +166,7 @@ echo >>{var.wizUVF} ""
 
 ; VFD Configuration
 echo >>{var.wizUVF} "; VFD Configuration"
+echo >>{var.wizUVF} {"; Type: " ^ var.wizType ^ " Channel: " ^ var.wizChan ^ " Address: " ^ var.wizAddr }
 echo >>{var.wizUVF} {"set global.arborVFDConfig[" ^ var.wizSpdlID ^ "] = {" ^ var.wizTypeIndex ^ ", " ^ var.wizChan ^ ", " ^ var.wizAddr ^ "} ; VFD configuration"}
 echo >>{var.wizUVF} ""
 

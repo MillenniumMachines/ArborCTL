@@ -76,7 +76,7 @@ var reset = { exists(param.D) && param.D == 1 }
 
 while { var.vfdModelDetected == null }
     ; Check if the VFD is powered on and responding
-    M261.9 E0 P{param.C} A{param.A} F3 R{global.yl620aSpecialParams[0][0]} B1
+    M2601 E0 P{param.C} A{param.A} F3 R{global.yl620aSpecialParams[0][0]} B1
     var vfdModel = { global.arborRetVal }
 
     if { var.vfdModel != null && var.vfdModel[0] != 0 }
@@ -148,7 +148,7 @@ while { iterations < #global.yl620aConfigParams }
     ; Write batch of parameters using Modbus command - pass values vector directly to B parameter
     while { iterations < #var.values }
         echo { "ArborCtl: Yalang YL620-A - Writing parameter " ^ (iterations + 1) ^ ": " ^ var.values[iterations] }
-        M260.9 E0 P{param.C} A{param.A} F6 R{var.startAddr + iterations} B{var.values[iterations]}
+        M2600 E0 P{param.C} A{param.A} F6 R{var.startAddr + iterations} B{var.values[iterations]}
 
     ; Verify values were set correctly by reading them back
     var allCorrect = true
@@ -157,7 +157,7 @@ while { iterations < #global.yl620aConfigParams }
     ; We must read these one-by-one as reading multiple bytes seems to return
     ; incorrect values for certain registers.
     while { iterations < #var.values }
-        M261.9 E0 P{param.C} A{param.A} F3 R{var.startAddr + iterations} B1
+        M2601 E0 P{param.C} A{param.A} F3 R{var.startAddr + iterations} B1
         var readValue = { global.arborRetVal }
         if { var.readValue == null || #var.readValue != 1 }
             echo { "ArborCtl: Yalang YL620-A - Readback failed for parameter " ^ (iterations + 1) ^ ": expected " ^ var.values[iterations] }
@@ -190,6 +190,6 @@ else
     ; Restart the VFD to apply settings if requested
     if { global.yl620aSpecialParams[2][0] != null && global.yl620aSpecialParams[2][1] != null }
         M291 P"Configuration complete. Restarting VFD to apply settings..." R"ArborCtl: Yalang YL620-A" S0 T5
-        M260.9 E0 P{param.C} A{param.A} F6 R{global.yl620aSpecialParams[2][0]} B{global.yl620aSpecialParams[2][1]}
+        M2600 E0 P{param.C} A{param.A} F6 R{global.yl620aSpecialParams[2][0]} B{global.yl620aSpecialParams[2][1]}
     else
         M291 P"Configuration complete.  Restart your VFD to apply settings.  Press okay once complete" R"ArborCtl: Yalang YL620-A" S2 T0
