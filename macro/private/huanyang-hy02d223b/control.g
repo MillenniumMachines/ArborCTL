@@ -1,4 +1,4 @@
-; huanyang-hy02d223b.g - Huanyang HY02D223B VFD implementation
+; huanyang-hy02d223b/control.g - Huanyang HY02D223B VFD implementation
 ; This file implements specific commands for the Huanyang HY02D223B VFD
 ; This VFD is NOT Modbus compatible, so we have to use custom protocol
 ; with the Huanyang VFD protocol to control it

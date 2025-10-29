@@ -1,4 +1,4 @@
-; yalang-yl620a.g - Yalang YL620-A VFD implementation
+; yalang-yl620a/control.g - Yalang YL620-A VFD implementation
 ; This file implements specific commands for the Yalang YL620-A VFD
 
 if { !exists(param.A) }

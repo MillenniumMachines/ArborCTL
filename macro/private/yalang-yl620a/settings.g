@@ -1,4 +1,4 @@
-; settings/yalang-yl620-a.g - Yalang YL620-A VFD settings
+; yalang-yl620a/settings.g - Yalang YL620-A VFD settings
 ; This file stores the register addresses and values for the Yalang YL620-A VFD
 
 if { !exists(global.yl620aSpecialParams) }

@@ -1,4 +1,4 @@
-; config/shihlin-sl3.g - Shihlin SL3 VFD configuration
+; shihlin-sl3/config.g - Shihlin SL3 VFD configuration
 ; This file implements specific commands for the Shihlin SL3 VFD
 ;
 ; Parameters:
@@ -63,7 +63,7 @@ if { !exists(param.R) }
 
 
 ; Load the settings file which will define global.sl3ConfigParams
-M98 P"arborctl/settings/shihlin-sl3.g" W{param.W} U{param.U} V{param.V} F{param.F} I{param.I} R{param.R} T{param.T} E{param.E}
+M98 P"arborctl/shihlin-sl3/settings.g" W{param.W} U{param.U} V{param.V} F{param.F} I{param.I} R{param.R} T{param.T} E{param.E}
 
 var waitTime = 250
 

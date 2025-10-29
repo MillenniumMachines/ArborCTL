@@ -21,7 +21,7 @@ var spindleAddr    = { global.arborVFDConfig[param.S][2] }
 if { var.spindleModel == null || var.spindleChannel == null || var.spindleAddr == null }
     M99
 
-var modelFile = { "arborctl/control/" ^ global.arborModelInternalNames[var.spindleModel] ^ ".g" }
+var modelFile = { "arborctl/" ^ global.arborModelInternalNames[var.spindleModel] ^ "/control.g" }
 
 if { global.arborSpindleDriverExists[param.S] == null }
     echo { "ArborCtl: Checking for existence of VFD model file for spindle " ^ param.S }
