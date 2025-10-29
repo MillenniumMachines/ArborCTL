@@ -23,13 +23,11 @@ if { var.spindleModel == null || var.spindleChannel == null || var.spindleAddr =
 
 var modelFile = { "arborctl/control/" ^ global.arborModelInternalNames[var.spindleModel] ^ ".g" }
 
-if {!exists(global.spindleDriverExists)}
-    global spindleDriverExists = { vector(limits.spindles, null) }
+if { global.arborSpindleDriverExists[param.S] == null }
+    echo { "ArborCtl: Checking for existence of VFD model file for spindle " ^ param.S }
+    set global.arborSpindleDriverExists[param.S] = { fileexists("0:/sys/" ^ var.modelFile ) }
 
-if { global.spindleDriverExists[param.S] == null }
-    set global.spindleDriverExists[param.S] = { fileexists("0:/sys/" ^ var.modelFile ) }
-
-if { ! global.spindleDriverExists[param.S] }
+if { ! global.arborSpindleDriverExists[param.S] }
     echo { "ArborCtl: VFD model file '0:/sys/" ^ var.modelFile ^ "' not found for spindle " ^ param.S ^ "!" }
     M99
 
@@ -54,6 +52,7 @@ var jobRunning    = { job.file.fileName != null && !(state.status == "resuming" 
 if { (var.wasStable && !var.isStable && !var.commandChange) || var.errorDetected }
     ; Unexpected instability detected - pause job
     echo { "ArborCtl: Spindle " ^ param.S ^ " became unstable!" }
+    echo { "ArborCtl: VFD Running=" ^ var.vfdRunning ^ " WasStable=" ^ var.wasStable ^ " IsStable=" ^ var.isStable ^ " CommandChange=" ^ var.commandChange ^ " ErrorDetected=" ^ var.errorDetected }
     if { var.jobRunning }
         echo { "ArborCtl: Pausing job" }
         M25 ; Pause any running job

@@ -6,7 +6,10 @@ global arborModelInternalNames = { "shihlin-sl3", "huanyang-hy02d223b", "yalang-
 global arborModelDefaultAddress = { 1, 1, 10 }
 global arborModelDefaultBaudRateIndex = { 1, 1, 2 }
 
-; Return value for last M260.9 or M261.9 command
+; Drive existence cache - to avoid repeated file existence checks
+global arborSpindleDriverExists = { vector(limits.spindles, null) }
+
+; Return value for last M2600 or M2601 command
 global arborRetVal = { null }
 
 ; Maximum load percentage before triggering overload condition 
