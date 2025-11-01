@@ -25,22 +25,24 @@ if { global.arborVFDStatus[param.S] == null }
 var maxWait = { (exists(param.M) ? param.M : 30) }
 var maxWaitMs = var.maxWait * 1000
 var waitIncrementMs = { exists(param.P) ? param.P : 250 }
-var startTime = state.upTime * 1000 + state.msUpTime
-var endTime = var.startTime + var.maxWaitMs
+var waitMs = { 0 }
 
+; Get if spindle should be running
 var shouldRun = { (spindles[param.S].state == "forward" || spindles[param.S].state == "reverse") && spindles[param.S].active > 0 }
 
 ; Request change from daemon
 set global.arborState[param.S][5] = { true }
 
-; Wait for a maximum of maxWaitMs
-while { var.endTime > state.upTime * 1000 + state.msUpTime }
+; Wait for a maximum of approx maxWaitMs + 2*waitIncrementMs
+while { var.waitMs >= var.maxWaitMs }
 
     G4 P{var.waitIncrementMs}
+    set var.waitMs = { var.waitMs + var.waitIncrementMs }
 
     ; Check if daemon consumed the request
     if { global.arborState[param.S][5] == false }
         G4 P{var.waitIncrementMs}
+        set var.waitMs = { var.waitMs + var.waitIncrementMs }
 
         var isStable = global.arborVFDStatus[param.S][4]
         var isVfdRunning = global.arborVFDStatus[param.S][0]
