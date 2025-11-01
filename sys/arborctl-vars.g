@@ -25,7 +25,8 @@ global arborMaxRetries = 3
 ; 2: Previous stability flag (for detecting changes)
 ; 3: Min/max frequency limits from VFD
 ; 4: Error state (true when VFD has an error condition)
-global arborState = { vector(limits.spindles, { null, false, false, null, false }) }
+; 5: Pending request to be acknowledged by control daemon when desired state has been set (e.g. thru M3.9)
+global arborState = { vector(limits.spindles, { null, false, false, null, false, false }) }
 
 ; USER-FRIENDLY VARIABLES - indexed by spindle number
 ; These are public and intended for external script use
