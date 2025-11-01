@@ -34,7 +34,7 @@ var shouldRun = { (spindles[param.S].state == "forward" || spindles[param.S].sta
 set global.arborState[param.S][5] = { true }
 
 ; Wait for a maximum of approx maxWaitMs + 2*waitIncrementMs
-while { var.waitMs >= var.maxWaitMs }
+while { var.waitMs < var.maxWaitMs }
 
     G4 P{var.waitIncrementMs}
     set var.waitMs = { var.waitMs + var.waitIncrementMs }
