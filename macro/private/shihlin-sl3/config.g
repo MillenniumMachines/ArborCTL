@@ -153,7 +153,7 @@ while { iterations < #global.sl3ConfigParams }
     ; Write batch of parameters using Modbus command - pass values vector directly to B parameter
     while { iterations < #var.values }
         echo { "ArborCtl: Shihlin-SL3 - Writing parameter " ^ (iterations + 1) ^ ": " ^ var.values[iterations] }
-        M2600 E0 P{param.C} A{param.A} F6 R{var.startAddr + iterations} B{var.values[iterations]}
+        M2600 E0 P{param.C} A{param.A} F6 R{var.startAddr + iterations} B{var.values[iterations],}
         G4 P{var.waitTime}
 
     ; Verify values were set correctly by reading them back
@@ -196,4 +196,4 @@ else
 
     ; Restart the VFD to apply settings if requested
     M291 P"Configuration complete. Restarting VFD to apply settings..." R"ArborCtl: Shihlin-SL3" S0 T5
-    M2600 E0 P{param.C} A{param.A} F6 R{global.sl3SpecialParams[2][0]} B{global.sl3SpecialParams[2][1]}
+    M2600 E0 P{param.C} A{param.A} F6 R{global.sl3SpecialParams[2][0]} B{global.sl3SpecialParams[2][1],}
