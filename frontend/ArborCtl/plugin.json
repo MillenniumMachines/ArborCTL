@@ -1,0 +1,9 @@
+{
+	"id": "ArborCtl",
+	"name": "ArborCTL Web Dashboard",
+	"author": "MillenniumMachines",
+	"version": "0.1.0",
+	"license": "GPL-3.0",
+	"dwcVersion": "3.3.0",
+	"sbcRequired": false
+}
