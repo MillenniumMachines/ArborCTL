@@ -1,10 +1,10 @@
 ; arborctl-vars.g - Variables required for ArborCtl RS485 spindle control
 
 ; Available Spindle / VFD models
-global arborAvailableModels = { "Shihlin SL3", "Huanyang HY02D223", "Yalang YL620-A" }
-global arborModelInternalNames = { "shihlin-sl3", "huanyang-hy02d223b", "yalang-yl620a" }
-global arborModelDefaultAddress = { 1, 1, 10 }
-global arborModelDefaultBaudRateIndex = { 1, 1, 2 }
+global arborAvailableModels = { "Shihlin SL3", "Huanyang HY02D223", "Yalang YL620-A", "TH Servo" }
+global arborModelInternalNames = { "shihlin-sl3", "huanyang-hy02d223b", "yalang-yl620a", "th-servo" }
+global arborModelDefaultAddress = { 1, 1, 10, 1 }
+global arborModelDefaultBaudRateIndex = { 1, 1, 2, 2 }
 
 ; Drive existence cache - to avoid repeated file existence checks
 global arborSpindleDriverExists = { vector(limits.spindles, null) }
