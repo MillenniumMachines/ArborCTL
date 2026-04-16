@@ -163,14 +163,14 @@ if { global.arborState[param.S][0][2] == null }
     set global.arborState[param.S][0] = { global.arborState[param.S][0][0], global.arborState[param.S][0][1], 0 }
 var trackedDirection = { global.arborState[param.S][0][2] }
 if { !var.vfdRunning }
-    set var.trackedDirection = 0
+    set var.trackedDirection = { 0 }
 var vfdForward = { var.vfdRunning && var.trackedDirection > 0 }
 var vfdReverse = { var.vfdRunning && var.trackedDirection < 0 }
 var reportedDirection = { var.vfdRunning ? var.trackedDirection : 0 }
 var numPoles = { global.arborState[param.S][0][0][1] }  ; Get motor poles from stored config
-var newFreq = 0
+var newFreq = { 0 }
 
-var commandChange = false
+var commandChange = { false }
 
 ; Stop spindle as early as possible if it should not be running
 if { !var.shouldRun && var.vfdRunning }
@@ -183,12 +183,12 @@ if { !var.shouldRun && var.vfdRunning }
     M260.4 P{param.C} A{param.A} B{{0x03, 0x01, 0x08}} R3
     G4 P{var.cmdWait}
 
-    set var.reportedDirection = 0
-    set var.commandChange = true
+    set var.reportedDirection = { 0 }
+    set var.commandChange = { true }
 else
     ; Calculate the frequency to set based on the rpm requested
-    var maxFreq = global.arborState[param.S][3][1]
-    var minFreq = global.arborState[param.S][3][0]
+    var maxFreq = { global.arborState[param.S][3][1] }
+    var minFreq = { global.arborState[param.S][3][0] }
 
     ; RPM = 120 x f / poles
     ; f = RPM x poles / 120
@@ -206,7 +206,7 @@ else
         echo { "ArborCtl: Setting spindle " ^ param.S ^ " frequency to " ^ var.newFreq ^ " Hz" }
         M260.4 P{param.C} A{param.A} B{{0x05, 0x02, var.freqHigh, var.freqLow}} R4
         G4 P{var.cmdWait}
-        set var.commandChange = true
+        set var.commandChange = { true }
 
     ; Runtime status reads do not expose direction, so after a restart we stop a running
     ; spindle once before reissuing the requested direction.
@@ -216,8 +216,8 @@ else
         G4 P{var.cmdWait}
         M260.4 P{param.C} A{param.A} B{{0x03, 0x01, 0x08}} R3
         G4 P{var.cmdWait}
-        set var.reportedDirection = 0
-        set var.commandChange = true
+        set var.reportedDirection = { 0 }
+        set var.commandChange = { true }
 
     ; Start spindle in the requested direction if needed
     elif { spindles[param.S].state == "forward" }
@@ -225,16 +225,16 @@ else
             echo { "ArborCtl: Starting spindle " ^ param.S ^ " in forward direction" }
             M260.4 P{param.C} A{param.A} B{{0x03, 0x01, 0x01}} R3
             G4 P{var.cmdWait}
-            set var.reportedDirection = 1
-            set var.commandChange = true
+            set var.reportedDirection = { 1 }
+            set var.commandChange = { true }
 
     elif { spindles[param.S].state == "reverse" }
         if { !var.vfdRunning || !var.vfdReverse }
             echo { "ArborCtl: Starting spindle " ^ param.S ^ " in reverse direction" }
             M260.4 P{param.C} A{param.A} B{{0x03, 0x01, 0x11}} R3
             G4 P{var.cmdWait}
-            set var.reportedDirection = -1
-            set var.commandChange = true
+            set var.reportedDirection = { -1 }
+            set var.commandChange = { true }
 
 ; Calculate current RPM from output frequency
 var currentRPM = { var.currentFreq * 60 * 2 / var.numPoles }
@@ -248,21 +248,21 @@ var freqStable = { var.freqDiff < (var.targetFreq * 0.05) || var.freqDiff < 0.5 
 set global.arborState[param.S][2] = { global.arborVFDStatus[param.S] != null ? global.arborVFDStatus[param.S][4] : false }
 
 ; Update internal state
-set global.arborState[param.S][1] = var.commandChange
-set global.arborState[param.S][0][2] = var.reportedDirection
+set global.arborState[param.S][1] = { var.commandChange }
+set global.arborState[param.S][0][2] = { var.reportedDirection }
 
 ; Update public status variables
-set global.arborVFDStatus[param.S][0] = var.vfdRunning
+set global.arborVFDStatus[param.S][0] = { var.vfdRunning }
 set global.arborVFDStatus[param.S][1] = { var.vfdRunning ? var.reportedDirection : 0 }
-set global.arborVFDStatus[param.S][2] = var.currentFreq
-set global.arborVFDStatus[param.S][3] = var.currentRPM
-set global.arborVFDStatus[param.S][4] = var.freqStable
+set global.arborVFDStatus[param.S][2] = { var.currentFreq }
+set global.arborVFDStatus[param.S][3] = { var.currentRPM }
+set global.arborVFDStatus[param.S][4] = { var.freqStable }
 
 ; Calculate and update power information
 if { global.arborState[param.S][0] != null }
     ; Calculate power in watts (P = √3 × V × I × PF)
-    var powerFactor = 0.8  ; Assumed power factor
-    var ratedVoltage = global.arborState[param.S][0][0][2]  ; Get voltage from stored config
+    var powerFactor = { 0.8 } ; Assumed power factor
+    var ratedVoltage = { global.arborState[param.S][0][0][2] }  ; Get voltage from stored config
     var outputPower = { sqrt(3) * var.ratedVoltage * var.outputCurrent * var.powerFactor }
 
     ; Calculate load percentage
@@ -270,5 +270,5 @@ if { global.arborState[param.S][0] != null }
     var loadPercentage = { min((var.outputPower / var.ratedPower) * 100, 100) }
 
     ; Update power information
-    set global.arborVFDPower[param.S][0] = var.outputPower
-    set global.arborVFDPower[param.S][1] = var.loadPercentage
+    set global.arborVFDPower[param.S][0] = { var.outputPower }
+    set global.arborVFDPower[param.S][1] = { var.loadPercentage }
