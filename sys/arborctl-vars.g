@@ -1,8 +1,8 @@
 ; arborctl-vars.g - Variables required for ArborCtl RS485 spindle control
 
 ; Available Spindle / VFD models
-global arborAvailableModels = { "Shihlin SL3", "Huanyang HY02D223", "Yalang YL620-A" }
-global arborModelInternalNames = { "shihlin-sl3", "huanyang-hy02d223b", "yalang-yl620a" }
+global arborAvailableModels = { "Shihlin SL3", "Huanyang HY02D223", "Yalang YL620-A","SCHNEIDER ALTIVAR ATV320"  }
+global arborModelInternalNames = { "shihlin-sl3", "huanyang-hy02d223b", "yalang-yl620a", "ATV320" }
 global arborModelDefaultAddress = { 1, 1, 10 }
 global arborModelDefaultBaudRateIndex = { 1, 1, 2 }
 
