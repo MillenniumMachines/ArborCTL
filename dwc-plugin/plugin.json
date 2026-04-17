@@ -1,0 +1,18 @@
+{
+    "id": "ArborCTL",
+    "name": "ArborCTL",
+    "author": "Ben Agricola",
+    "version": "%%ARBORCTL_VERSION%%",
+    "license": "GPL-3.0-or-later",
+    "homepage": "https://github.com/benagricola/ArborCTL",
+    "tags": [
+        "spindle",
+        "vfd",
+        "rs485",
+        "cnc"
+    ],
+    "dwcVersion": "3.6",
+    "dwcDependencies": [],
+    "rrfVersion": "3.6",
+    "sbcPermissions": []
+}

@@ -3,8 +3,8 @@
 ; This VFD is NOT Modbus compatible, so we have to use custom protocol
 ; with the Huanyang VFD protocol to control it
 ;
-; All Huanyang serial calls go through M2604.g so a timeout does not
-; abort the caller macro.
+; All M260.4 calls go through send.g so that a communication timeout
+; does not abort this macro.
 
 if { !exists(param.A) }
     abort { "ArborCtl: No address specified!" }
@@ -64,99 +64,99 @@ if { global.arborState[param.S][3] == null }
         echo { "ArborCtl: Huanyang motor data from wizard (PD reads skipped)." }
         echo { "  Min Hz=" ^ var.wizFl[0] ^ " Max Hz=" ^ var.wizFl[1] }
     else
-    ; Read number of motor poles (PD143)
-    M2604 P{param.C} A{param.A} B{{0x01, 0x02, var.REG_MOTOR_POLES, 0x00, 0x00}} R5
-    G4 P{var.cmdWait}
-    var rawMotorPoles = { global.arborRetVal }
+        ; Read number of motor poles (PD143)
+        M2604 P{param.C} A{param.A} B{{0x01, 0x02, var.REG_MOTOR_POLES, 0x00, 0x00}} R5
+        G4 P{var.cmdWait}
+        var rawMotorPoles = { global.arborRetVal }
 
-    ; Read rated motor voltage (PD141)
-    M2604 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MOTOR_VOLTAGE, 0x00, 0x00}} R6
-    G4 P{var.cmdWait}
-    var rawMotorVoltage = { global.arborRetVal }
+        ; Read rated motor voltage (PD141)
+        M2604 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MOTOR_VOLTAGE, 0x00, 0x00}} R6
+        G4 P{var.cmdWait}
+        var rawMotorVoltage = { global.arborRetVal }
 
-    ; Read rated motor current (PD142)
-    M2604 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MOTOR_CURRENT, 0x00, 0x00}} R6
-    G4 P{var.cmdWait}
-    var rawMotorCurrent = { global.arborRetVal }
+        ; Read rated motor current (PD142)
+        M2604 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MOTOR_CURRENT, 0x00, 0x00}} R6
+        G4 P{var.cmdWait}
+        var rawMotorCurrent = { global.arborRetVal }
 
-    ; Read rated motor speed (PD144)
-    M2604 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MOTOR_SPEED, 0x00, 0x00}} R6
-    G4 P{var.cmdWait}
-    var rawMotorSpeed = { global.arborRetVal }
+        ; Read rated motor speed (PD144)
+        M2604 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MOTOR_SPEED, 0x00, 0x00}} R6
+        G4 P{var.cmdWait}
+        var rawMotorSpeed = { global.arborRetVal }
 
-    ; Read max frequency (PD005)
-    M2604 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MAX_FREQ, 0x00, 0x00}} R6
-    G4 P{var.cmdWait}
-    var rawMaxFreq = { global.arborRetVal }
+        ; Read max frequency (PD005)
+        M2604 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MAX_FREQ, 0x00, 0x00}} R6
+        G4 P{var.cmdWait}
+        var rawMaxFreq = { global.arborRetVal }
 
-    ; Read lower frequency limit (PD011)
-    M2604 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MIN_FREQ, 0x00, 0x00}} R6
-    G4 P{var.cmdWait}
-    var rawMinFreq = { global.arborRetVal }
+        ; Read lower frequency limit (PD011)
+        M2604 P{param.C} A{param.A} B{{0x01, 0x03, var.REG_MIN_FREQ, 0x00, 0x00}} R6
+        G4 P{var.cmdWait}
+        var rawMinFreq = { global.arborRetVal }
 
-    ; Check if we received all the necessary data
-    if { var.rawMotorPoles == null || var.rawMotorVoltage == null || var.rawMotorCurrent == null }
-        if { exists(global.arborVFDCommReady) }
-            set global.arborVFDCommReady[param.S] = false
-        if { exists(global.arborVFDCommFaultLatched) && !global.arborVFDCommFaultLatched[param.S] }
-            echo { "ArborCtl: Huanyang comm fault latched on spindle " ^ param.S ^ ". Daemon polling disabled until wizard retry." }
-        if { exists(global.arborVFDCommFaultLatched) }
-            set global.arborVFDCommFaultLatched[param.S] = true
-        if { exists(global.arborctlDaemonEnabled) }
-            set global.arborctlDaemonEnabled = false
-        echo { "ArborCtl: Failed to read motor configuration from Huanyang VFD!" }
-        M99
-    if { var.rawMotorSpeed == null || var.rawMaxFreq == null || var.rawMinFreq == null }
-        if { exists(global.arborVFDCommReady) }
-            set global.arborVFDCommReady[param.S] = false
-        if { exists(global.arborVFDCommFaultLatched) && !global.arborVFDCommFaultLatched[param.S] }
-            echo { "ArborCtl: Huanyang comm fault latched on spindle " ^ param.S ^ ". Daemon polling disabled until wizard retry." }
-        if { exists(global.arborVFDCommFaultLatched) }
-            set global.arborVFDCommFaultLatched[param.S] = true
-        if { exists(global.arborctlDaemonEnabled) }
-            set global.arborctlDaemonEnabled = false
-        echo { "ArborCtl: Failed to read motor configuration from Huanyang VFD!" }
-        M99
+        ; Check if we received all the necessary data
+        if { var.rawMotorPoles == null || var.rawMotorVoltage == null || var.rawMotorCurrent == null }
+            if { exists(global.arborVFDCommReady) }
+                set global.arborVFDCommReady[param.S] = false
+            if { exists(global.arborVFDCommFaultLatched) && !global.arborVFDCommFaultLatched[param.S] }
+                echo { "ArborCtl: Huanyang comm fault latched on spindle " ^ param.S ^ ". Daemon polling disabled until wizard retry." }
+            if { exists(global.arborVFDCommFaultLatched) }
+                set global.arborVFDCommFaultLatched[param.S] = true
+            if { exists(global.arborctlDaemonEnabled) }
+                set global.arborctlDaemonEnabled = false
+            echo { "ArborCtl: Failed to read motor configuration from Huanyang VFD!" }
+            M99
+        if { var.rawMotorSpeed == null || var.rawMaxFreq == null || var.rawMinFreq == null }
+            if { exists(global.arborVFDCommReady) }
+                set global.arborVFDCommReady[param.S] = false
+            if { exists(global.arborVFDCommFaultLatched) && !global.arborVFDCommFaultLatched[param.S] }
+                echo { "ArborCtl: Huanyang comm fault latched on spindle " ^ param.S ^ ". Daemon polling disabled until wizard retry." }
+            if { exists(global.arborVFDCommFaultLatched) }
+                set global.arborVFDCommFaultLatched[param.S] = true
+            if { exists(global.arborctlDaemonEnabled) }
+                set global.arborctlDaemonEnabled = false
+            echo { "ArborCtl: Failed to read motor configuration from Huanyang VFD!" }
+            M99
 
-    ; Parse values from the responses
-    var motorPoles = var.rawMotorPoles[4]
-    var motorVoltage = { var.rawMotorVoltage[4] * 256 + var.rawMotorVoltage[5] }
-    var motorCurrent = { (var.rawMotorCurrent[4] * 256 + var.rawMotorCurrent[5]) / 10.0 }
-    var motorSpeed = { var.rawMotorSpeed[4] * 256 + var.rawMotorSpeed[5] }
-    var maxFreq = { (var.rawMaxFreq[4] * 256 + var.rawMaxFreq[5]) / 100.0 }
-    var minFreq = { (var.rawMinFreq[4] * 256 + var.rawMinFreq[5]) / 100.0 }
+        ; Parse values from the responses
+        var motorPoles = var.rawMotorPoles[4]
+        var motorVoltage = { var.rawMotorVoltage[4] * 256 + var.rawMotorVoltage[5] }
+        var motorCurrent = { (var.rawMotorCurrent[4] * 256 + var.rawMotorCurrent[5]) / 10.0 }
+        var motorSpeed = { var.rawMotorSpeed[4] * 256 + var.rawMotorSpeed[5] }
+        var maxFreq = { (var.rawMaxFreq[4] * 256 + var.rawMaxFreq[5]) / 100.0 }
+        var minFreq = { (var.rawMinFreq[4] * 256 + var.rawMinFreq[5]) / 100.0 }
 
-    ; Calculate rated frequency based on speed and poles
-    var motorFreq = { (var.motorSpeed * var.motorPoles) / 120 }
+        ; Calculate rated frequency based on speed and poles
+        var motorFreq = { (var.motorSpeed * var.motorPoles) / 120 }
 
-    ; Calculate rated power (P = sqrt(3) x V x I x PF), assuming PF of 0.8
-    var powerFactor = 0.8
-    var motorPower = { (sqrt(3) * var.motorVoltage * var.motorCurrent * var.powerFactor) / 1000 }
+        ; Calculate rated power (P = sqrt(3) x V x I x PF), assuming PF of 0.8
+        var powerFactor = 0.8
+        var motorPower = { (sqrt(3) * var.motorVoltage * var.motorCurrent * var.powerFactor) / 1000 }
 
-    ; Create a motor configuration vector [power, poles, voltage, frequency, current, speed]
-    var motorCfg = { vector(6, 0) }
-    set var.motorCfg[0] = var.motorPower
-    set var.motorCfg[1] = var.motorPoles
-    set var.motorCfg[2] = var.motorVoltage
-    set var.motorCfg[3] = var.motorFreq
-    set var.motorCfg[4] = var.motorCurrent
-    set var.motorCfg[5] = var.motorSpeed
+        ; Create a motor configuration vector [power, poles, voltage, frequency, current, speed]
+        var motorCfg = { vector(6, 0) }
+        set var.motorCfg[0] = var.motorPower
+        set var.motorCfg[1] = var.motorPoles
+        set var.motorCfg[2] = var.motorVoltage
+        set var.motorCfg[3] = var.motorFreq
+        set var.motorCfg[4] = var.motorCurrent
+        set var.motorCfg[5] = var.motorSpeed
 
-    ; Frequency conversion vector for consistency with Shihlin
-    var freqConv = { vector(1, 1.0) }
+        ; Frequency conversion vector for consistency with Shihlin
+        var freqConv = { vector(1, 1.0) }
 
-    ; Store motor config, frequency conversion, and last commanded direction
-    set global.arborState[param.S][0] = { var.motorCfg, var.freqConv, 0 }
+        ; Store motor config, frequency conversion, and last commanded direction
+        set global.arborState[param.S][0] = { var.motorCfg, var.freqConv, 0 }
 
-    ; Store frequency limits
-    set global.arborState[param.S][3] = { vector(2, 0) }
-    set global.arborState[param.S][3][0] = var.minFreq
-    set global.arborState[param.S][3][1] = var.maxFreq
+        ; Store frequency limits
+        set global.arborState[param.S][3] = { vector(2, 0) }
+        set global.arborState[param.S][3][0] = var.minFreq
+        set global.arborState[param.S][3][1] = var.maxFreq
 
-    echo { "ArborCTL Huanyang HY02D223B Configuration: " }
-    echo { "  Power=" ^ var.motorCfg[0] ^ "kW, Poles=" ^ var.motorCfg[1] ^ ", Voltage=" ^ var.motorCfg[2] ^ "V" }
-    echo { "  Frequency=" ^ var.motorCfg[3] ^ "Hz, Current=" ^ var.motorCfg[4] ^ "A, Speed=" ^ var.motorCfg[5] ^ "RPM" }
-    echo { "  Max Freq=" ^ var.maxFreq ^ "Hz, Min Freq=" ^ var.minFreq ^ "Hz" }
+        echo { "ArborCTL Huanyang HY02D223B Configuration: " }
+        echo { "  Power=" ^ var.motorCfg[0] ^ "kW, Poles=" ^ var.motorCfg[1] ^ ", Voltage=" ^ var.motorCfg[2] ^ "V" }
+        echo { "  Frequency=" ^ var.motorCfg[3] ^ "Hz, Current=" ^ var.motorCfg[4] ^ "A, Speed=" ^ var.motorCfg[5] ^ "RPM" }
+        echo { "  Max Freq=" ^ var.maxFreq ^ "Hz, Min Freq=" ^ var.minFreq ^ "Hz" }
 
 ; Determine what the spindle should be doing based on RRF's state
 var shouldRun = { (spindles[param.S].state == "forward" || spindles[param.S].state == "reverse") && spindles[param.S].active > 0 }
@@ -229,12 +229,12 @@ else
     var minFreq = { global.arborState[param.S][3][0] }
 
     ; f = RPM x poles / 120
-    set var.newFreq = { min(var.maxFreq, max(var.minFreq, (spindles[param.S].active * var.numPoles) / 120)) }
+    var newFreq = { min(var.maxFreq, max(var.minFreq, (spindles[param.S].active * var.numPoles) / 120)) }
 
     ; Huanyang protocol expects frequency in 0.01Hz units
     var scaledFreq = { floor(var.newFreq * 100) }
     var freqHigh = { floor(var.scaledFreq / 256) }
-    var freqLow = { var.scaledFreq - (var.freqHigh * 256) }
+    var freqLow = { var.scaledFreq % 256 }
 
     ; Check if current frequency doesn't match the requested one
     var currentScaledFreq = { floor(var.setFreq * 100) }
