@@ -1,0 +1,30 @@
+ArborCTL — classification of differences vs MillenniumMachines/ArborCTL (origin/main)
+Generated for maintenance: what is safe to treat as "hot path" vs optional UX vs build output.
+
+BUILD ARTIFACTS (do not hand-edit in parallel with source; regenerate from macro/ + sys/)
+- dist/*.zip, dist/arborctl-*.zip — release packages
+- dist/_runtime_stage/** — staged copy of macros/sys for packaging; should track macro/ and sys/
+- dist/build-dwc-plugin.ps1 — packaging script
+
+RESILIENCE / PROTOCOL (required for Huanyang clones, M260.4 timeouts, Millennium-OS)
+- sys/arborctl-vars.g — arborWizardFreqLimits, arborVFDCommReady, arborVFDCommFaultLatched, arborctlDaemonEnabled
+- sys/arborctl.g — comm gate re-init after reboot for configured spindles
+- macro/gcodes/M2604.g — wraps M260.4 so timeouts do not abort parent macros
+- macro/private/control-spindle.g — skips driver until comm ready; fault latch
+- macro/private/arborctl-daemon.g — respects arborctlDaemonEnabled
+- macro/private/huanyang-hy02d223b/control.g — M2604, wizard motor fallback, fault latching
+- macro/private/huanyang-hy02d223b/config.g — channel probe/fallback, PD writes, comm-ready (core); M291 block is UX-only (trimmed to short prompt + doc pointer)
+- macro/private/huanyang-hy02d223b/send.g — supporting
+- macro/gcodes/G8001.g — writes arborctl-user-vars.g (wizard); kept as fallback for panel-only users
+
+UX / INTEGRATION
+- dwc-plugin/dwc-src/ArborCTL.vue — one-page configuration UI + Run wizard fallback
+- dwc-plugin/dwc-src/index.ts, dwc-plugin/plugin.json — plugin registration
+- macro/public/Run Configuration Wizard.g — entry to G8001
+
+DOCS
+- doc/hy02d223b-protocol-notes.md — RS485 / PD reference for operators
+- doc/upstream-diff-stat.txt — git diff --stat vs origin/main (regenerate after large merges)
+
+UPSTREAM NOTE
+- MillenniumMachines main control-spindle.g historically had a buggy guard using "|" instead of "||"; keep the corrected local guard if merging upstream.

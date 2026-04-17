@@ -1,0 +1,45 @@
+﻿ dist/ArborCTL-0.0.7-2-gbfcdf68-dirty.zip           | Bin 0 -> 49436 bytes
+ dist/ArborCTL-0.0.7-2-gbfcdf68.zip                 | Bin 0 -> 45766 bytes
+ dist/_runtime_stage/macro/gcodes/G4.9.g            |  70 +++++
+ dist/_runtime_stage/macro/gcodes/G8001.g           | 180 ++++++++++++
+ dist/_runtime_stage/macro/gcodes/M2600.g           |  24 ++
+ dist/_runtime_stage/macro/gcodes/M2601.g           |  16 ++
+ dist/_runtime_stage/macro/gcodes/M2604.g           |  23 ++
+ .../_runtime_stage/macro/private/arborctl-daemon.g |  15 +
+ .../_runtime_stage/macro/private/control-spindle.g |  84 ++++++
+ .../macro/private/delay-for-command.g              |  16 ++
+ .../macro/private/huanyang-hy02d223b/config.g      | 233 ++++++++++++++++
+ .../macro/private/huanyang-hy02d223b/control.g     | 307 +++++++++++++++++++++
+ .../macro/private/huanyang-hy02d223b/send.g        |  24 ++
+ .../macro/private/huanyang-hy02d223b/settings.g    |  56 ++++
+ .../macro/private/shihlin-sl3/config.g             | 201 ++++++++++++++
+ .../macro/private/shihlin-sl3/control.g            | 208 ++++++++++++++
+ .../macro/private/shihlin-sl3/settings.g           |  98 +++++++
+ .../macro/private/yalang-yl620a/config.g           | 197 +++++++++++++
+ .../macro/private/yalang-yl620a/control.g          | 211 ++++++++++++++
+ .../macro/private/yalang-yl620a/settings.g         |  48 ++++
+ .../macro/public/Run Configuration Wizard.g        |   7 +
+ dist/_runtime_stage/sys/arborctl-vars.g            |  70 +++++
+ dist/_runtime_stage/sys/arborctl.g                 |  64 +++++
+ dist/_runtime_stage/sys/config.g.example           |   3 +
+ dist/_runtime_stage/sys/daemon.g.example           |  10 +
+ dist/arborctl-runtime-files.zip                    | Bin 0 -> 33752 bytes
+ dist/arborctl-runtime-folders.zip                  | Bin 0 -> 34012 bytes
+ dist/arborctl-sys-files.zip                        | Bin 0 -> 2862 bytes
+ dist/build-dwc-plugin.ps1                          | 146 ++++++++++
+ dwc-plugin/dwc-src/ArborCTL.vue                    | 114 ++++++++
+ dwc-plugin/dwc-src/index.ts                        |  13 +
+ dwc-plugin/plugin.json                             |  18 ++
+ macro/gcodes/G8001.g                               |  33 ++-
+ macro/gcodes/M2604.g                               |  23 ++
+ macro/private/arborctl-daemon.g                    |   3 +
+ macro/private/control-spindle.g                    |  15 +-
+ macro/private/huanyang-hy02d223b/config.g          | 137 ++++++---
+ macro/private/huanyang-hy02d223b/control.g         | 175 +++++++-----
+ macro/private/huanyang-hy02d223b/send.g            |  24 ++
+ macro/private/huanyang-hy02d223b/settings.g        |   4 +-
+ macro/private/shihlin-sl3/config.g                 |   2 +
+ macro/private/yalang-yl620a/config.g               |   2 +
+ sys/arborctl-vars.g                                |  21 +-
+ sys/arborctl.g                                     |  10 +
+ 44 files changed, 2776 insertions(+), 129 deletions(-)

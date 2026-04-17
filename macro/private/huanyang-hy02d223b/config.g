@@ -133,37 +133,10 @@ while { var.vfdCommReady == null }
                 echo { "ArborCtl: Huanyang HY02D223B - Auto-corrected UART channel to P" ^ var.commChannel }
     else
         var hyTitle = "ArborCtl: Huanyang HY02D223B Setup"
-        var promptNoComms = "Unable to communicate with the Huanyang HY02D223B VFD. Your VFD may need to be configured for RS485 communication.<br/><br/>Would you like guidance on how to configure your VFD?"
-        M291 P{var.promptNoComms} R{var.hyTitle} S4 T0 K{"Yes, guide me","No, skip and retry"} F0 J2
+        var promptNoComms = "Unable to communicate with the Huanyang HY02D223B VFD. Check RS485 wiring, address <b>" ^ param.A ^ "</b>, and baud <b>" ^ param.B ^ "</b>.<br/><br/>On the VFD panel set RS485: typically <b>PD163</b> address, <b>PD164</b> baud, <b>PD165</b>=3 (RTU 8N1), <b>PD001</b>=2, <b>PD002</b>=2. Full notes: <b>doc/hy02d223b-protocol-notes.md</b> in the ArborCTL repo.<br/><br/>Power-cycle the VFD, then press OK to retry probing."
+        M291 P{var.promptNoComms} R{var.hyTitle} S3 T0 J2
         if { result == -1 }
             abort { "ArborCtl: Operator aborted configuration wizard!" }
-
-        if { input == 0 }
-            var stepIntro = "These settings need to be configured directly on your VFD's control panel."
-            M291 P{var.stepIntro} R{var.hyTitle} S2 T0
-
-            var step1 = "STEP 1: Enter parameter setting mode<br/><br/>Press <b>PRGM</b> until the display shows a <b>PDxxx</b> parameter code."
-            M291 P{var.step1} R{var.hyTitle} S2 T0
-
-            var step2Msg = { "STEP 2: Set VFD address<br/><br/>Select <b>PD163</b>, press <b>SET</b>, change to <b>" ^ param.A ^ "</b>, press <b>SET</b> again." }
-            M291 P{var.step2Msg} R{var.hyTitle} S2 T0
-
-            var step3Msg = { "STEP 3: Set baud rate<br/><br/>Select <b>PD164</b>, press <b>SET</b>, change to <b>" ^ var.baudRateValue ^ "</b> (" ^ param.B ^ "bps), press <b>SET</b> again." }
-            M291 P{var.step3Msg} R{var.hyTitle} S2 T0
-
-            var step4 = "STEP 4: Set communication format<br/><br/>Select <b>PD165</b>, press <b>SET</b>, change to <b>3</b> (RTU 8N1), press <b>SET</b> again."
-            M291 P{var.step4} R{var.hyTitle} S2 T0
-
-            var step5 = "STEP 5: Set run command source<br/><br/>Select <b>PD001</b>, press <b>SET</b>, change to <b>2</b> (communication port)."
-            M291 P{var.step5} R{var.hyTitle} S2 T0
-
-            var step6 = "STEP 6: Set frequency source<br/><br/>Select <b>PD002</b>, press <b>SET</b>, change to <b>2</b> (communication port)."
-            M291 P{var.step6} R{var.hyTitle} S2 T0
-
-            var step7 = "STEP 7: Power-cycle the VFD, then press OK to retry the connection."
-            M291 P{var.step7} R{var.hyTitle} S2 T0 J2
-            if { result == -1 }
-                abort { "ArborCtl: Operator aborted configuration wizard!" }
 
 echo { "ArborCtl: Huanyang HY02D223B - Communication established" }
 echo { "ArborCtl: Huanyang HY02D223B - Starting VFD configuration process with " ^ #global.hy02d223bConfigParams ^ " parameters" }
