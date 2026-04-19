@@ -73,7 +73,7 @@ try {
     # 1) Copy plugin skeleton (plugin.json, dwc-src/)
     Copy-Item -Path (Join-Path $PluginSrc '*') -Destination $Staging -Recurse -Force
 
-    # 2) Stage SD layout that mirrors ArborCTL's release.sh mapping
+    # 2) Stage SD layout (same mapping as build-dwc-plugin.sh)
     $Sd = Join-Path $Staging 'sd'
     $SdSys = Join-Path $Sd 'sys'
     $SdArbor = Join-Path $SdSys 'arborctl'

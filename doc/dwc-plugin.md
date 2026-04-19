@@ -8,7 +8,7 @@ The **ArborCTL** panel in [Duet Web Control](https://github.com/Duet3D/DuetWebCo
 
 ## Installing the plugin
 
-**Production:** Build or use a release ZIP that includes the plugin bundle (see `dist/build-dwc-plugin.ps1` if present). Upload the ZIP through DWC **System → Files** as usual; do not unzip on the PC before upload.
+**Production:** Download **`ArborCTL-<version>.zip`** from GitHub **Releases** (built by CI when a **`v*`** tag is pushed), or build locally with **`dist/build-dwc-plugin.sh`** / **`dist/build-dwc-plugin.ps1`**. Upload the ZIP through DWC **System → Files** as usual; do not unzip on the PC before upload.
 
 **Development:** See [dwc-development.md](dwc-development.md) — copy `dwc-plugin/` into `DuetWebControl/src/plugins/ArborCTL`, run `tools/setup-dwc-dev.ps1`, then `npm run dev`. A local **DuetWebControl** clone (e.g. `dwc-env/`) should stay **out of git**; add it to `.gitignore` if you clone beside this repo.
 

@@ -40,8 +40,8 @@
 
 ## Quick start (machine install)
 
-1. **Get a release asset** (recommended): GitHub **Releases** → download **`arborctl-release-<tag>.zip`** for a tagged version — *not* “Source code” from the green Code button.
-2. In **Duet Web Control** → **System** → **Files**, **upload the ZIP as a single file** (do **not** unzip on your PC first).
+1. **Get the DWC plugin ZIP** from GitHub **Releases**: **`ArborCTL-<version>.zip`** (e.g. **`ArborCTL-0.2.0.zip`**) — built by CI from each **`v*`** tag. Do *not* download “Source code” from the green **Code** button unless you intend to build from source.
+2. In **Duet Web Control** → **System** → **Files**, **upload that ZIP as a single file** (do **not** unzip on your PC first). DWC installs the plugin and deploys the bundled on-card files.
 3. Add to the end of **`0:/sys/config.g`**:
 
    ```gcode
@@ -70,49 +70,46 @@ The **ArborCTL** panel (optional) edits **`arborctl-user-vars.g`**, supports **M
 
 ## Releases and packaging
 
-There are **two different ZIPs** people confuse:
-
-| Artifact | What it is | How it is produced |
-|----------|------------|-------------------|
-| **SD card bundle** | `sys/`, `sys/arborctl/`, `sys/*.g` gcodes, `macros/ArborCtl/` — what you upload to the **Duet** | **[`dist/release.sh`](dist/release.sh)** (bash): copies from **`sys/`**, **`macro/public/`**, **`macro/private/`**, **`macro/gcodes/`**, substitutes **`%%ARBORCTL_VERSION%%`** with `git describe`, zips to **`dist/<chosen-name>.zip`** |
-| **DWC plugin only** | Installable DWC plugin (UI + embedded SD layout for the plugin package) | **[`dist/build-dwc-plugin.ps1`](dist/build-dwc-plugin.ps1)** (PowerShell): needs a **DuetWebControl** clone with **`npm install`**, runs DWC’s **`scripts/build-plugin-pkg.js`**; writes **`dist/ArborCTL-<version>.zip`** |
+**Official downloads are the DWC plugin ZIP only:** **`ArborCTL-<version>.zip`** (Vue UI + embedded **`sd/`** tree: `sys/`, `sys/arborctl/`, gcodes, macros). Users install it through DWC **System → Files** upload.
 
 ### GitHub Releases (CI)
 
 - Workflow: **[`.github/workflows/release.yml`](.github/workflows/release.yml)**.
-- **Trigger:** push a **git tag** matching **`v*`** (e.g. **`v0.1.0`**).
-- **Action:** runs **`dist/release.sh arborctl-release-$TAG_NAME`**, uploads **`dist/arborctl-release-<tag>.zip`** to a **draft** GitHub Release (publish the draft when ready).
-- **Note:** this workflow builds the **SD bundle** only. The **DWC plugin ZIP** is **not** built in CI today; build it locally with **`build-dwc-plugin.ps1`** if you need to attach it to the release manually.
+- **Trigger:** push a **git tag** matching **`v*`** (e.g. **`v0.2.0`**).
+- **Action:** clones **DuetWebControl `v3.6.1`**, runs **`npm install`**, runs **[`dist/build-dwc-plugin.sh`](dist/build-dwc-plugin.sh)** (same staging as **[`dist/build-dwc-plugin.ps1`](dist/build-dwc-plugin.ps1)**), uploads **`dist/ArborCTL-<version>.zip`** to a **published** GitHub Release (not draft) with generated release notes.
 
-### Should you create a GitHub Release?
+**Publish a release:**
 
-- **Yes**, when you want users to download a **versioned, tested** SD bundle from **Releases** — matches the README “download from Releases” flow.
-- Use a **semver tag** (`v0.2.0`), write release notes (what changed, any config migration), publish the draft release.
-- **Pre-releases** are fine for alpha (`v0.2.0-rc1` + mark prerelease in GitHub).
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
 
-### The `dist/` folder
-
-- **`dist/`** is the **output directory** for scripts (`release.sh`, `build-dwc-plugin.ps1`).
-- **`dist/_runtime_stage/`** is a **staged mirror** of macros/sys for review or packaging; **`release.sh`** reads **`macro/`** and **`sys/`** at the repo root, not `_runtime_stage` — keep sources in sync when you change drivers.
-- **Committing `*.zip` into `dist/`** is optional. Some repos track release artifacts for convenience; others gitignore them and only attach zips to GitHub Releases. **Do not** rely on random ad-hoc zips in `dist/` as the official distribution path unless they are named and documented — **tagged Releases** are clearer for end users.
+Use a **semver** tag. **Pre-releases:** create a pre-release in the GitHub UI after the workflow runs, or use a tag like `v0.2.0-rc1` and adjust release metadata as needed.
 
 ### Manual build (maintainers)
 
-**Linux / macOS / WSL** (SD bundle):
+Requires a **DuetWebControl** checkout with **`npm install`** (same **3.6.x** line as **`dwc-plugin/plugin.json`** `dwcVersion`).
+
+**Linux / macOS / WSL:**
 
 ```bash
 cd /path/to/ArborCTL
-bash dist/release.sh arborctl-release-$(git describe --tags --always).zip
-# Output: dist/arborctl-release-<name>.zip
+bash dist/build-dwc-plugin.sh /path/to/DuetWebControl v0.2.0
+# Output: dist/ArborCTL-0.2.0.zip
 ```
 
-**Windows** (DWC plugin — adjust `-DwcRepo`):
+**Windows:**
 
 ```powershell
 cd ArborCTL
-powershell -ExecutionPolicy Bypass -File .\dist\build-dwc-plugin.ps1 -DwcRepo C:\path\to\DuetWebControl-3.6.1
-# Output: dist\ArborCTL-<version>.zip
+powershell -ExecutionPolicy Bypass -File .\dist\build-dwc-plugin.ps1 -DwcRepo C:\path\to\DuetWebControl-3.6.1 -Version 0.2.0
 ```
+
+### `dist/` folder
+
+- **`dist/_runtime_stage/`** — optional mirror of staged files for review; **not** what CI uses (CI stages from **`sys/`** and **`macro/`** via the build scripts above).
+- **Committed `*.zip` files** in **`dist/`** are optional local artifacts; **Releases** are the canonical download.
 
 ---
 
