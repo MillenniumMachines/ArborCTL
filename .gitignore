@@ -1,2 +1,5 @@
 .DS_Store
 
+# Local DuetWebControl clone used for `npm run dev` (see doc/dwc-development.md)
+dwc-env/
+

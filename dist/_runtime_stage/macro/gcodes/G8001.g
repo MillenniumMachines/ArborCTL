@@ -164,7 +164,15 @@ echo >>{var.wizUVF} {"set global.arborMotorSpec[" ^ var.wizSpdlID ^ "] = {" ^ va
 echo >>{var.wizUVF} {"set global.arborWizardFreqLimits[" ^ var.wizSpdlID ^ "] = {" ^ var.wizSpdlT ^ ", " ^ var.wizSpdlE ^ "} ; Min/max Hz from spindle limits"}
 echo >>{var.wizUVF} ""
 
+if { var.wizTypeIndex == 3 }
+    echo >>{var.wizUVF} "; Manual Modbus (experimental): define global.arborModbusManualSpec[" ^ var.wizSpdlID ^ "] (11 ints) via DWC or doc/modbus-manual-experimental.md"
+
 echo { "ArborCtl: User configuration saved to " ^ var.wizUVF }
+
+if { var.wizTypeIndex == 3 }
+    M291 P{"Manual Modbus (experimental): after reboot, set the 11 register integers in <b>arborModbusManualSpec[" ^ var.wizSpdlID ^ "]</b> (DWC plugin or hand-edit). Then run VFD setup or G8001 again."} R"ArborCtl: Configuration Wizard" S3 T0 J2
+    if { result == -1 }
+        abort { "ArborCtl: Operator aborted configuration wizard!" }
 
 ; Ask user if they want to configure VFD now
 var cfgPrompt = "Configure VFD and motor settings now?<br/><br/>VFD must be connected and powered on.<br/><br/>Choose <b>No</b> to save settings and configure later."

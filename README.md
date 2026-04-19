@@ -10,9 +10,13 @@ A daemon macro framework for RepRapFirmware v3.6+, which helps to implement RS48
    - Your spindle needs to be configured before the include. Make sure this has the correct pins defined (enable, direction, speed) even if these are not connected.
  - Edit your `daemon.g` file to include `arborctl-daemon.g`. Check `sys/daemon.g.example` for hints on how to do this.
 
-## DWC plugin development
+## DWC plugin
 
-To run **Duet Web Control** locally with hot reload for `dwc-plugin/` (the ArborCTL UI), copy this repo’s `dwc-plugin` into a [DuetWebControl](https://github.com/Duet3D/DuetWebControl) **3.6.x** checkout as `src/plugins/ArborCTL` (on Windows, **do not use a directory junction** — see doc), then `npm install` and `npm run dev`. Use `tools/setup-dwc-dev.ps1` to copy, enable the plugin by default, and set the CNC dashboard. Full steps: [doc/dwc-development.md](doc/dwc-development.md).
+The **ArborCTL** panel edits `arborctl-user-vars.g`, supports **Manual Modbus** (experimental) and **TH Servo (preliminary)**, shows **live load and telemetry**, and can **Test Modbus** without saving. Full behavior, object model fields, probe macros, and troubleshooting: **[doc/dwc-plugin.md](doc/dwc-plugin.md)**.
+
+### DWC plugin development
+
+To run **Duet Web Control** locally with hot reload for `dwc-plugin/` (the ArborCTL UI), copy this repo’s `dwc-plugin` into a [DuetWebControl](https://github.com/Duet3D/DuetWebControl) **3.6.x** checkout as `src/plugins/ArborCTL` (on Windows, **do not use a directory junction** — see doc), then `npm install` and `npm run dev`. Use `tools/setup-dwc-dev.ps1` to copy, enable the plugin by default, and set the CNC dashboard. Full steps: [doc/dwc-development.md](doc/dwc-development.md). Keep a local `dwc-env/` (or similar) **out of git** — it is listed in `.gitignore`.
 
 ## Notes
 

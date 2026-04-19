@@ -1,10 +1,10 @@
 ; arborctl-vars.g - Variables required for ArborCtl RS485 spindle control
 
 ; Available Spindle / VFD models
-global arborAvailableModels = { "Shihlin SL3", "Huanyang HY02D223", "Yalang YL620-A" }
-global arborModelInternalNames = { "shihlin-sl3", "huanyang-hy02d223b", "yalang-yl620a" }
-global arborModelDefaultAddress = { 1, 1, 10 }
-global arborModelDefaultBaudRateIndex = { 1, 1, 2 }
+global arborAvailableModels = { "Shihlin SL3", "Huanyang HY02D223", "Yalang YL620-A", "Manual Modbus (experimental)", "TH Servo (preliminary)" }
+global arborModelInternalNames = { "shihlin-sl3", "huanyang-hy02d223b", "yalang-yl620a", "modbus-manual-experimental", "th-servo" }
+global arborModelDefaultAddress = { 1, 1, 10, 1, 1 }
+global arborModelDefaultBaudRateIndex = { 1, 1, 2, 1, 2 }
 
 ; Drive existence cache - to avoid repeated file existence checks
 global arborSpindleDriverExists = { vector(limits.spindles, null) }
@@ -44,6 +44,13 @@ global arborMotorSpec = { vector(limits.spindles, null) }
 ; Min/max spindle frequency (Hz) from wizard — used when PD parameter
 ; reads (function 0x01) are not supported by the VFD clone.
 global arborWizardFreqLimits = { vector(limits.spindles, null) }
+
+; Manual Modbus (experimental): per-spindle register map (11 integers). See
+; doc/modbus-manual-experimental.md. Null until configured (DWC or user vars).
+global arborModbusManualSpec = { vector(limits.spindles, null) }
+
+; Last written frequency raw (UINT16) for manual Modbus when no readback register.
+global arborModbusManualLastRaw = { vector(limits.spindles, null) }
 
 ; VFD status variables - all in one vector
 ; [0]: running status (bool), [1]: direction (0=stopped, 1=forward, -1=reverse)

@@ -51,6 +51,8 @@ npm run dev
 
 Open the URL printed in the terminal (often `http://localhost:8080`). Use the sidebar **Plugins → ArborCTL**.
 
+Feature reference (telemetry, Test Modbus, TH Servo UI, Manual Modbus): [dwc-plugin.md](dwc-plugin.md).
+
 ## CNC appearance vs machine mode
 
 **Dashboard mode “CNC”** in DWC (Settings → General → Appearance, or the setup script default) only changes the **web UI** (panels, icons). The **machine mode** (FFF vs CNC) still comes from **RepRapFirmware** when you connect to a board (`state.machineMode` in the object model).
