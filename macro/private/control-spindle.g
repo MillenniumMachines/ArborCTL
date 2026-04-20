@@ -49,10 +49,9 @@ var commandChange = { global.arborState[param.S][1] }
 var jobRunning    = { job.file.fileName != null && !(state.status == "resuming" || state.status == "pausing" || state.status == "paused") }
 
 ; Check for unexpected instability
-if { (var.wasStable && !var.isStable && !var.commandChange) || var.errorDetected }
+if { (var.vfdRunning && var.wasStable && !var.isStable && !var.commandChange) || var.errorDetected }
     ; Unexpected instability detected - pause job
     echo { "ArborCtl: Spindle " ^ param.S ^ " became unstable!" }
-    echo { "ArborCtl: VFD Running=" ^ var.vfdRunning ^ " WasStable=" ^ var.wasStable ^ " IsStable=" ^ var.isStable ^ " CommandChange=" ^ var.commandChange ^ " ErrorDetected=" ^ var.errorDetected }
     if { var.jobRunning }
         echo { "ArborCtl: Pausing job" }
         M25 ; Pause any running job
