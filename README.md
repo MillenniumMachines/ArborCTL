@@ -40,7 +40,7 @@
 
 ## Quick start (machine install)
 
-1. **Get the DWC plugin ZIP** from GitHub **Releases**: **`ArborCTL-<version>.zip`** (e.g. **`ArborCTL-0.2.0.zip`**) — built by CI from each **`v*`** tag. Do *not* download “Source code” from the green **Code** button unless you intend to build from source.
+1. **Get the DWC plugin ZIP** from GitHub **Releases**: [**latest release**](https://github.com/MillenniumMachines/ArborCTL/releases/latest), asset name **`ArborCTL-<version>.zip`** (e.g. **`ArborCTL-0.2.0.zip`**) — built by CI from each **`v*`** tag. Do *not* download “Source code” from the green **Code** button unless you intend to build from source.
 2. In **Duet Web Control** → **System** → **Files**, **upload that ZIP as a single file** (do **not** unzip on your PC first). DWC installs the plugin and deploys the bundled on-card files.
 3. Add to the end of **`0:/sys/config.g`**:
 
@@ -70,7 +70,7 @@ The **ArborCTL** panel (optional) edits **`arborctl-user-vars.g`**, supports **M
 
 ## Releases and packaging
 
-**Official downloads are the DWC plugin ZIP only:** **`ArborCTL-<version>.zip`** (Vue UI + embedded **`sd/`** tree: `sys/`, `sys/arborctl/`, gcodes, macros). Users install it through DWC **System → Files** upload.
+**Official downloads are the DWC plugin ZIP only:** [**GitHub Releases**](https://github.com/MillenniumMachines/ArborCTL/releases), asset **`ArborCTL-<version>.zip`** (Vue UI + embedded **`sd/`** tree: `sys/`, `sys/arborctl/`, gcodes, macros). Users install it through DWC **System → Files** upload.
 
 ### GitHub Releases (CI)
 
@@ -109,7 +109,8 @@ powershell -ExecutionPolicy Bypass -File .\dist\build-dwc-plugin.ps1 -DwcRepo C:
 ### `dist/` folder
 
 - **`dist/_runtime_stage/`** — optional mirror of staged files for review; **not** what CI uses (CI stages from **`sys/`** and **`macro/`** via the build scripts above).
-- **Committed `*.zip` files** in **`dist/`** are optional local artifacts; **Releases** are the canonical download.
+- **`dist/ArborCTL-<version>.zip`** is a local build output for maintainers.
+- End users should download from **GitHub Releases** (canonical location).
 
 ---
 

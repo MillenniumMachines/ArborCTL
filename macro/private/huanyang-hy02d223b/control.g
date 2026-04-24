@@ -223,7 +223,7 @@ if { !var.shouldRun && var.vfdRunning }
 
     set var.reportedDirection = { 0 }
     set var.commandChange = { true }
-else
+elif { var.shouldRun }
     ; Calculate the frequency to set based on the rpm requested
     var maxFreq = { global.arborState[param.S][3][1] }
     var minFreq = { global.arborState[param.S][3][0] }
