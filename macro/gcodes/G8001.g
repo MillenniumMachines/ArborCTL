@@ -37,8 +37,6 @@ if { exists(global.arborctlLdd) && global.arborctlLdd }
     M291 P{"ArborCtl is already configured. Click <b>Continue</b> to re-configure and change settings, or <b>Reset</b> to reset all settings and start again."} R"ArborCtl: Configuration Wizard" S4 T0 K{"Continue","Reset"} J2
     if { result == -1 }
         abort { "ArborCtl: Operator aborted configuration wizard!" }
-elif { exists(global.arborctlErr) && global.arborctlErr != null }
-    M291 P{"ArborCtl could not be loaded due to a startup error.<br/>Click <b>Update</b> to configure any missing settings or <b>Reset</b> to reset all settings and start again."} R"ArborCtl: Configuration Wizard" S4 T0 K{"Update","Reset"}
 
 ; Reset if requested
 set var.wizReset = { (input == 1) }

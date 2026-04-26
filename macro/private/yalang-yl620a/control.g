@@ -17,9 +17,6 @@ var setCommandAddr = 0x2000
 var setFrequencyAddr = 0x2001
 var stateBytesAddr = 0x2008
 
-if {!exists(global.vfdAtSpeedCount)}
-    global vfdAtSpeedCount = 0
-
 ; Gather Motor Configuration from VFD if not already loaded
 if { global.arborState[param.S][0] == null }
     ; 0 = Motor Rated Current, 1 = Motor Rated Voltage, 2 = Motor Poles

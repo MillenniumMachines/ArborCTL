@@ -23,10 +23,6 @@
                         <td>{{ version || "Unknown" }}</td>
                     </tr>
                     <tr>
-                        <th class="text-left">Last error</th>
-                        <td>{{ lastError || "None" }}</td>
-                    </tr>
-                    <tr>
                         <th class="text-left">Configured spindles</th>
                         <td>{{ configuredSpindles }}</td>
                     </tr>
@@ -454,9 +450,6 @@ export default Vue.extend({
         },
         version(): string | null {
             return getGlobal("arborctlVer") ?? null;
-        },
-        lastError(): string | null {
-            return getGlobal("arborctlErr") ?? null;
         },
         configuredSpindles(): number {
             const cfg = getOmGlobal("arborVFDConfig");

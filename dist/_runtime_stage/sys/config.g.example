@@ -1,3 +1,0 @@
-; Load ArborCTL if it has been installed
-if { fileexists("arborctl.g") }
-    M98 P"arborctl.g"

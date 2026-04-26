@@ -21,11 +21,6 @@ if { !exists(global.arborctlLdd) }
 else
     set global.arborctlLdd=false
 
-if { !exists(global.arborctlErr) }
-    global arborctlErr=null
-else
-    set global.arborctlErr=null
-
 ; If user vars file doesn't exist, run configuration wizard
 if { !fileexists("0:/sys/arborctl-user-vars.g") }
     echo { "No user configuration file found. Running configuration wizard." }
