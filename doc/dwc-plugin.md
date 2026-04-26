@@ -22,7 +22,6 @@ The panel reads **user globals** from `state.machine.model.global` (with a fallb
 |--------|---------|
 | `arborctlLdd` | ArborCTL loaded |
 | `arborctlVer` | Version string |
-| `arborctlErr` | Last error, if any |
 | `arborAvailableModels` / `arborModelInternalNames` | VFD list and macro folder names |
 | `arborVFDConfig` | Per-spindle `{ typeIndex, channel, address }` |
 | `arborMotorSpec` | Per-spindle motor nameplate vector |

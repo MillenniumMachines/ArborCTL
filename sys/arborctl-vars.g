@@ -6,9 +6,6 @@ global arborModelInternalNames = { "shihlin-sl3", "huanyang-hy02d223b", "yalang-
 global arborModelDefaultAddress = { 1, 1, 10, 1, 1 }
 global arborModelDefaultBaudRateIndex = { 1, 1, 2, 1, 2 }
 
-; Drive existence cache - to avoid repeated file existence checks
-global arborSpindleDriverExists = { vector(limits.spindles, null) }
-
 ; Return value for last M2600 or M2601 command
 global arborRetVal = { null }
 
@@ -61,17 +58,9 @@ global arborVFDStatus = { vector(limits.spindles, null) }
 ; [0]: current power consumption in watts, [1]: load as percentage of rated power
 global arborVFDPower = { vector(limits.spindles, null) }
 
-; Communication-ready flag per spindle. Set to true after a successful
-; VFD probe during the configuration wizard. The Huanyang driver uses
-; M260.4 which throws unrecoverable errors on timeout, so the daemon
-; must not attempt communication until this flag is set.
+; Per-spindle comm health gate. true once a driver probe has succeeded;
+; cleared by drivers on hard communication failure (so the daemon stops
+; calling that spindle's control.g until the next successful probe).
+; The Huanyang driver uses M260.4 which throws unrecoverable errors on
+; timeout, so the daemon must not call it until this flag is set.
 global arborVFDCommReady = { vector(limits.spindles, false) }
-
-; Communication-fault latch per spindle. Once a driver detects repeated or
-; hard communication failure, this is latched true and daemon polling stops
-; for that spindle until the wizard re-establishes communication.
-global arborVFDCommFaultLatched = { vector(limits.spindles, false) }
-
-; Master daemon enable switch. Drivers may disable this on safety-critical
-; communication faults to prevent runaway log spam and repeated retries.
-global arborctlDaemonEnabled = true

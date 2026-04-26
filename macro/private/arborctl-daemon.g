@@ -1,9 +1,6 @@
 ; arbor-daemon.g - ArborCtl daemon control file
 ; This file runs the appropriate VFD control file and handles spindle stability monitoring
 
-if { exists(global.arborctlDaemonEnabled) && !global.arborctlDaemonEnabled }
-    M99
-
 while { iterations < limits.spindles }
     if { spindles[iterations].state == "unconfigured" }
         continue

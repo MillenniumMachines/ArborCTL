@@ -95,27 +95,10 @@ if { global.arborState[param.S][3] == null }
     var rawMinFreq = { global.arborRetVal }
 
     ; Check if we received all the necessary data
-    if { var.rawMotorPoles == null || var.rawMotorVoltage == null || var.rawMotorCurrent == null }
+    if { var.rawMotorPoles == null || var.rawMotorVoltage == null || var.rawMotorCurrent == null || var.rawMotorSpeed == null || var.rawMaxFreq == null || var.rawMinFreq == null }
         if { exists(global.arborVFDCommReady) }
             set global.arborVFDCommReady[param.S] = false
-        if { exists(global.arborVFDCommFaultLatched) && !global.arborVFDCommFaultLatched[param.S] }
-            echo { "ArborCtl: Huanyang comm fault latched on spindle " ^ param.S ^ ". Daemon polling disabled until wizard retry." }
-        if { exists(global.arborVFDCommFaultLatched) }
-            set global.arborVFDCommFaultLatched[param.S] = true
-        if { exists(global.arborctlDaemonEnabled) }
-            set global.arborctlDaemonEnabled = false
-        echo { "ArborCtl: Failed to read motor configuration from Huanyang VFD!" }
-        M99
-    if { var.rawMotorSpeed == null || var.rawMaxFreq == null || var.rawMinFreq == null }
-        if { exists(global.arborVFDCommReady) }
-            set global.arborVFDCommReady[param.S] = false
-        if { exists(global.arborVFDCommFaultLatched) && !global.arborVFDCommFaultLatched[param.S] }
-            echo { "ArborCtl: Huanyang comm fault latched on spindle " ^ param.S ^ ". Daemon polling disabled until wizard retry." }
-        if { exists(global.arborVFDCommFaultLatched) }
-            set global.arborVFDCommFaultLatched[param.S] = true
-        if { exists(global.arborctlDaemonEnabled) }
-            set global.arborctlDaemonEnabled = false
-        echo { "ArborCtl: Failed to read motor configuration from Huanyang VFD!" }
+        echo { "ArborCtl: Huanyang comm fault on spindle " ^ param.S ^ ". Re-run config to clear." }
         M99
 
     ; Parse values from the responses
@@ -182,13 +165,7 @@ var rawCurrent = { global.arborRetVal }
 if { var.rawSetFreq == null || var.rawOutFreq == null || var.rawCurrent == null }
     if { exists(global.arborVFDCommReady) }
         set global.arborVFDCommReady[param.S] = false
-    if { exists(global.arborVFDCommFaultLatched) && !global.arborVFDCommFaultLatched[param.S] }
-        echo { "ArborCtl: Huanyang comm fault latched on spindle " ^ param.S ^ ". Daemon polling disabled until wizard retry." }
-    if { exists(global.arborVFDCommFaultLatched) }
-        set global.arborVFDCommFaultLatched[param.S] = true
-    if { exists(global.arborctlDaemonEnabled) }
-        set global.arborctlDaemonEnabled = false
-    echo { "ArborCtl: Failed to read spindle state from Huanyang VFD!" }
+    echo { "ArborCtl: Huanyang comm fault on spindle " ^ param.S ^ ". Re-run config to clear." }
     M5
     M99
 

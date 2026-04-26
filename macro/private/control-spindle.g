@@ -24,24 +24,10 @@ if { var.spindleModel == null || var.spindleChannel == null || var.spindleAddr =
 
 var modelFile = { "arborctl/" ^ global.arborModelInternalNames[var.spindleModel] ^ "/control.g" }
 
-if { global.arborSpindleDriverExists[param.S] == null }
-    echo { "ArborCtl: Checking for existence of VFD model file for spindle " ^ param.S }
-    set global.arborSpindleDriverExists[param.S] = { fileexists("0:/sys/" ^ var.modelFile ) }
-
-if { ! global.arborSpindleDriverExists[param.S] }
-    echo { "ArborCtl: VFD model file '0:/sys/" ^ var.modelFile ^ "' not found for spindle " ^ param.S ^ "!" }
-    M99
-
 ; Skip communication if the VFD has not been probed successfully.
 ; M260.4 (Huanyang) throws unrecoverable errors on timeout, so we
 ; must not call the driver until communication is known to work.
 if { exists(global.arborVFDCommReady) && !global.arborVFDCommReady[param.S] }
-    echo { "ArborCtl: Spindle " ^ param.S ^ " comm not ready (run G8001 / config first)." }
-    M99
-
-; Skip communication if this spindle has latched a hard comms fault.
-if { exists(global.arborVFDCommFaultLatched) && global.arborVFDCommFaultLatched[param.S] }
-    echo { "ArborCtl: Spindle " ^ param.S ^ " comm fault latched (rerun G8001 to clear)." }
     M99
 
 ; Run the appropriate VFD control file for the given spindle

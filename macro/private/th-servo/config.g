@@ -31,9 +31,5 @@ echo { "ArborCtl: TH Servo (preliminary) - probe OK on register 4096" }
 
 if { exists(global.arborVFDCommReady) }
     set global.arborVFDCommReady[param.S] = true
-if { exists(global.arborVFDCommFaultLatched) }
-    set global.arborVFDCommFaultLatched[param.S] = false
-if { exists(global.arborctlDaemonEnabled) }
-    set global.arborctlDaemonEnabled = true
 
 echo { "ArborCtl: TH Servo (preliminary) - configuration complete for spindle " ^ param.S }

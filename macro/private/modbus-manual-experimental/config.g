@@ -41,9 +41,5 @@ if { var.rProbe >= 0 }
 
 if { exists(global.arborVFDCommReady) }
     set global.arborVFDCommReady[param.S] = true
-if { exists(global.arborVFDCommFaultLatched) }
-    set global.arborVFDCommFaultLatched[param.S] = false
-if { exists(global.arborctlDaemonEnabled) }
-    set global.arborctlDaemonEnabled = true
 
 echo { "ArborCtl: Manual Modbus (experimental) - configuration complete for spindle " ^ param.S }

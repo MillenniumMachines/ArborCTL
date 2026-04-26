@@ -46,12 +46,10 @@ while { iterations < #global.arborVFDConfig }
     if { spindles[iterations].state == "unconfigured" }
         abort { "ArborCtl: Spindle " ^ iterations ^ " is configured in ArborCtl but unconfigured in RRF!" }
 
-    ; Re-enable comms gate at startup for configured spindles.
-    ; Without this, commReady stays false after reboot until G8001 is rerun.
+    ; Re-enable comm gate at startup for configured spindles.
+    ; Without this, commReady stays false after reboot.
     if { exists(global.arborVFDCommReady) }
         set global.arborVFDCommReady[iterations] = true
-    if { exists(global.arborVFDCommFaultLatched) }
-        set global.arborVFDCommFaultLatched[iterations] = false
 
 ; Allow ArborCtl macros to run.
 set global.arborctlLdd = true

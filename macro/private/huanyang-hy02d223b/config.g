@@ -118,10 +118,6 @@ while { var.vfdCommReady == null }
         ; Mark this spindle as communication-ready so the daemon can call control.g
         if { exists(global.arborVFDCommReady) }
             set global.arborVFDCommReady[param.S] = true
-        if { exists(global.arborVFDCommFaultLatched) }
-            set global.arborVFDCommFaultLatched[param.S] = false
-        if { exists(global.arborctlDaemonEnabled) }
-            set global.arborctlDaemonEnabled = true
         if { exists(global.arborVFDConfig) && global.arborVFDConfig[param.S] != null }
             ; Persist detected channel in-memory for this session.
             set global.arborVFDConfig[param.S][1] = var.commChannel
