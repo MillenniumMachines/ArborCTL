@@ -109,3 +109,7 @@ When ArborCTL is loaded, the panel lists **configured** spindles with Comm / Run
 - **Plugin missing in `npm run dev`:** Real copy (not junction); clear localhost site data.
 - **Test Modbus always fails:** Baud, address, AUX port, termination, VFD powered; for FC3 confirm register `R`.
 - **Telemetry empty:** Daemon running (standalone `daemon.g` or NeXT dispatcher), spindle configured, `arborVFDCommReady` true after config.
+- **`meta command: GCode command too long`:** Known RRF parser limit. In ArborCTL macro sources, avoid very long single lines (especially large `if { ... }` expressions and long string assignments). Split logic into temporary variables and build long messages in multiple `set` steps.
+
+For upstream packaging and CNC dashboard defaults, see [dwc-development.md](dwc-development.md).
+

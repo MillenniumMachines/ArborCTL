@@ -72,3 +72,5 @@ Release CI clones **DWC `v3.7.0-beta.1`**. The ZIP’s `dwcVersion` must **exact
 - **Plugin missing in `npm run dev`:** Use a real recursive copy, not a junction on Windows; re-run `setup-dwc-dev.sh`; clear site data for `localhost` if old DWC `localStorage` hides the plugin.
 - **Compile / Vite errors:** Match DWC checkout to the version you build against; use Node ≥20.19.
 - **Disconnected / empty globals:** The UI still renders; object model fields fill in after connecting to a board.
+- **`meta command: GCode command too long` on RRF:** Keep ArborCTL macro source lines short. Very long single-line expressions (especially `if { ... }` chains and long string literals) can exceed RRF parser limits; split into helper vars and incremental string concatenation.
+
