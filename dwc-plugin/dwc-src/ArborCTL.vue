@@ -851,9 +851,7 @@ export default Vue.extend({
         },
         async runWizard(): Promise<void> {
             try {
-                await store.dispatch("machine/sendCode", {
-                    code: 'M98 P"0:/macros/ArborCtl/Run Configuration Wizard.g"'
-                });
+                await store.dispatch("machine/sendCode", { code: "G8001" });
             } catch (e) {
                 console.error("[ArborCTL] Failed to start wizard", e);
             }

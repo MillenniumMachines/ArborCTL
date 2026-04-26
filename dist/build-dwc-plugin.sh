@@ -29,11 +29,10 @@ echo "Staging DWC plugin (version ${VERSION})..."
 
 cp -a "${REPO_ROOT}/dwc-plugin/." "${STAGING}/"
 
-mkdir -p "${STAGING}/sd/sys/arborctl" "${STAGING}/sd/macros/ArborCtl"
+mkdir -p "${STAGING}/sd/sys/arborctl"
 cp -a "${REPO_ROOT}/sys/." "${STAGING}/sd/sys/"
 cp -a "${REPO_ROOT}/macro/gcodes/." "${STAGING}/sd/sys/"
 cp -a "${REPO_ROOT}/macro/private/." "${STAGING}/sd/sys/arborctl/"
-cp -a "${REPO_ROOT}/macro/public/." "${STAGING}/sd/macros/ArborCtl/"
 
 while IFS= read -r -d '' f; do
   if grep -q '%%ARBORCTL_VERSION%%' "$f" 2>/dev/null; then

@@ -8,9 +8,9 @@ The **ArborCTL** panel in [Duet Web Control](https://github.com/Duet3D/DuetWebCo
 
 ## Installing the plugin
 
-**Production:** Download **`ArborCTL-<version>.zip`** from GitHub **Releases** (built by CI when a **`v*`** tag is pushed), or build locally with **`dist/build-dwc-plugin.sh`** / **`dist/build-dwc-plugin.ps1`**. Upload the ZIP through DWC **System → Files** as usual; do not unzip on the PC before upload.
+**Production:** Download **`ArborCTL-<version>.zip`** from GitHub **Releases** (built by CI when a **`v*`** tag is pushed), or build locally with **`dist/build-dwc-plugin.sh`** (use Git Bash / WSL on Windows). Upload the ZIP through DWC **System → Files** as usual; do not unzip on the PC before upload.
 
-**Development:** See [dwc-development.md](dwc-development.md) — copy `dwc-plugin/` into `DuetWebControl/src/plugins/ArborCTL`, run `tools/setup-dwc-dev.ps1`, then `npm run dev`. A local **DuetWebControl** clone (e.g. `dwc-env/`) should stay **out of git**; add it to `.gitignore` if you clone beside this repo.
+**Development:** See [dwc-development.md](dwc-development.md) — copy `dwc-plugin/` into `DuetWebControl/src/plugins/ArborCTL`, run `tools/setup-dwc-dev.sh` (or copy by hand on Windows), then `npm run dev`. A local **DuetWebControl** clone (e.g. `dwc-env/`) should stay **out of git**; add it to `.gitignore` if you clone beside this repo.
 
 ---
 
@@ -104,13 +104,12 @@ Huanyang ignores `R`; use **Test Modbus** to confirm wiring and addressing befor
 | `macro/private/huanyang-quick-probe.g` | Huanyang-only probe |
 | `macro/private/th-servo/*` | TH Servo driver |
 | `macro/private/modbus-manual-experimental/*` | Manual Modbus driver |
-| `dist/_runtime_stage/` | Staged copy for release scripts (keep in sync with `macro/` and `sys/` where applicable) |
 
 ---
 
 ## Troubleshooting
 
-- **Plugin missing in `npm run dev`:** Use **Copy** not a junction on Windows; re-run `setup-dwc-dev.ps1`; clear site data for `localhost` if old DWC `localStorage` hides the plugin.
+- **Plugin missing in `npm run dev`:** Use a real recursive copy, not a junction on Windows; re-run `setup-dwc-dev.sh` (or `xcopy /E /I` on plain Windows); clear site data for `localhost` if old DWC `localStorage` hides the plugin.
 - **Test Modbus always fails:** Baud, address, AUX port, termination, and that the VFD is powered; for FC3, confirm register `R` matches the manual.
 - **Telemetry empty:** Daemon running, spindle configured in ArborCTL, and `arborVFDCommReady` true after a successful config.
 

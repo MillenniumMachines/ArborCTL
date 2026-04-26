@@ -64,7 +64,7 @@ Model list and defaults live in **`sys/arborctl-vars.g`** (`arborAvailableModels
 
 The **ArborCTL** panel (optional) edits **`arborctl-user-vars.g`**, supports **Manual Modbus** and **TH Servo** UX (e.g. RPM labelling for TH Servo), shows **load / telemetry**, and runs **Test Modbus** without saving. Details: **[doc/dwc-plugin.md](doc/dwc-plugin.md)**.
 
-**Development** (hot reload): copy **`dwc-plugin/`** into a DWC **3.6.x** tree as **`src/plugins/ArborCTL`**, run **`tools/setup-dwc-dev.ps1`**, then **`npm run dev`**. See **[doc/dwc-development.md](doc/dwc-development.md)**. Local DWC clones (e.g. **`dwc-env/`**) are **gitignored**.
+**Development** (hot reload): copy **`dwc-plugin/`** into a DWC **3.6.x** tree as **`src/plugins/ArborCTL`**, run **`tools/setup-dwc-dev.sh`** (or copy by hand on Windows), then **`npm run dev`**. See **[doc/dwc-development.md](doc/dwc-development.md)**. Local DWC clones (e.g. **`dwc-env/`**) are **gitignored**.
 
 ---
 
@@ -76,7 +76,7 @@ The **ArborCTL** panel (optional) edits **`arborctl-user-vars.g`**, supports **M
 
 - Workflow: **[`.github/workflows/release.yml`](.github/workflows/release.yml)**.
 - **Trigger:** push a **git tag** matching **`v*`** (e.g. **`v0.2.0`**).
-- **Action:** clones **DuetWebControl `v3.6.1`**, runs **`npm install`**, runs **[`dist/build-dwc-plugin.sh`](dist/build-dwc-plugin.sh)** (same staging as **[`dist/build-dwc-plugin.ps1`](dist/build-dwc-plugin.ps1)**), uploads **`dist/ArborCTL-<version>.zip`** to a **published** GitHub Release (not draft) with generated release notes.
+- **Action:** clones **DuetWebControl `v3.6.1`**, runs **`npm install`**, runs **[`dist/build-dwc-plugin.sh`](dist/build-dwc-plugin.sh)**, uploads **`dist/ArborCTL-<version>.zip`** to a **published** GitHub Release (not draft) with generated release notes.
 
 **Publish a release:**
 
@@ -89,9 +89,7 @@ Use a **semver** tag. **Pre-releases:** create a pre-release in the GitHub UI af
 
 ### Manual build (maintainers)
 
-Requires a **DuetWebControl** checkout with **`npm install`** (same **3.6.x** line as **`dwc-plugin/plugin.json`** `dwcVersion`).
-
-**Linux / macOS / WSL:**
+Requires a **DuetWebControl** checkout with **`npm install`** (same **3.6.x** line as **`dwc-plugin/plugin.json`** `dwcVersion`). Use Git Bash / WSL on Windows.
 
 ```bash
 cd /path/to/ArborCTL
@@ -99,16 +97,8 @@ bash dist/build-dwc-plugin.sh /path/to/DuetWebControl v0.2.0
 # Output: dist/ArborCTL-0.2.0.zip
 ```
 
-**Windows:**
-
-```powershell
-cd ArborCTL
-powershell -ExecutionPolicy Bypass -File .\dist\build-dwc-plugin.ps1 -DwcRepo C:\path\to\DuetWebControl-3.6.1 -Version 0.2.0
-```
-
 ### `dist/` folder
 
-- **`dist/_runtime_stage/`** — optional mirror of staged files for review; **not** what CI uses (CI stages from **`sys/`** and **`macro/`** via the build scripts above).
 - **`dist/ArborCTL-<version>.zip`** is a local build output for maintainers.
 - End users should download from **GitHub Releases** (canonical location).
 
