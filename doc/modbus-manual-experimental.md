@@ -32,7 +32,7 @@ Tuning **wrNum/wrDen**: if the drive expects RPM × 10 in the frequency register
 
 ## Flow
 
-1. Run **G8001** or the **DWC** one-pager: pick **Manual Modbus (experimental)**, set motor, UART, address.
+1. Open the **DWC** plugin: pick **Manual Modbus (experimental)**, set motor, UART, address.
 2. Set **`arborModbusManualSpec[spindle]`** (DWC “Manual Modbus map” section or hand-edit `arborctl-user-vars.g`).
 3. **Save** and **Save & run VFD config** (or `M98` to `arborctl/modbus-manual-experimental/config.g` with the same parameters as other drivers).
 4. **Reboot** if needed, then exercise the spindle from RRF.

@@ -22,7 +22,7 @@
 - **Per-spindle configuration** (UART, baud, Modbus address, motor nameplate, Hz limits from RRF).
 - **Drivers** under `0:/sys/arborctl/<model>/` — Shihlin SL3, Huanyang HY02D223, Yalang YL620-A, **Manual Modbus (experimental)**, **TH Servo (preliminary)**.
 - **Daemon** (`arborctl-daemon.g`) polling VFDs and filling **object model** globals (`arborVFDStatus`, `arborVFDPower`, etc.).
-- **Optional [Duet Web Control](https://github.com/Duet3D/DuetWebControl) plugin** — one-page editor, live telemetry, **Test Modbus** probes.
+- **[Duet Web Control](https://github.com/Duet3D/DuetWebControl) plugin** — one-page editor (the canonical configuration UI), live telemetry, **Test Modbus** probes.
 
 ---
 
@@ -31,7 +31,7 @@
 | Doc | Contents |
 |-----|----------|
 | **[doc/dwc-plugin.md](doc/dwc-plugin.md)** | DWC UI: fields, object model, telemetry, Test Modbus, troubleshooting |
-| **[doc/dwc-development.md](doc/dwc-development.md)** | Local `npm run dev` with a DWC checkout, Windows Copy vs junction |
+| **[doc/dwc-development.md](doc/dwc-development.md)** | Local `npm run dev` with a DWC checkout |
 | **[doc/modbus-manual-experimental.md](doc/modbus-manual-experimental.md)** | Manual Modbus 11-int register map |
 | **[doc/hy02d223b-protocol-notes.md](doc/hy02d223b-protocol-notes.md)** | Huanyang protocol notes |
 | **`sys/config.g.example`**, **`sys/daemon.g.example`** | Snippets for your board |
@@ -50,7 +50,7 @@
 
 4. Configure your **spindle** in RRF (pins, tool, limits) *before* that line; enable/direction/speed must be defined even if unused.
 5. Merge **`sys/daemon.g.example`** ideas into your **`0:/sys/daemon.g`** so the daemon runs (include **`arborctl-daemon.g`** as in the example).
-6. **Reset** the board. If no user vars exist, the **G8001** wizard can run; otherwise use the **DWC ArborCTL** plugin or edit **`0:/sys/arborctl-user-vars.g`**.
+6. **Reset** the board. On first boot, ArborCtl will ask you to configure the spindle from the **DWC ArborCTL plugin**. Open it, fill in the form, click **Save & run VFD config macro**, then reset.
 
 ---
 
@@ -62,7 +62,7 @@ Model list and defaults live in **`sys/arborctl-vars.g`** (`arborAvailableModels
 
 ## DWC plugin
 
-The **ArborCTL** panel (optional) edits **`arborctl-user-vars.g`**, supports **Manual Modbus** and **TH Servo** UX (e.g. RPM labelling for TH Servo), shows **load / telemetry**, and runs **Test Modbus** without saving. Details: **[doc/dwc-plugin.md](doc/dwc-plugin.md)**.
+The **ArborCTL** panel is the canonical configuration UI. It edits **`arborctl-user-vars.g`**, supports **Manual Modbus** and **TH Servo** UX (e.g. RPM labelling for TH Servo), shows **load / telemetry**, and runs **Test Modbus** without saving. Details: **[doc/dwc-plugin.md](doc/dwc-plugin.md)**.
 
 **Development** (hot reload): copy **`dwc-plugin/`** into a DWC **3.6.x** tree as **`src/plugins/ArborCTL`**, run **`tools/setup-dwc-dev.sh`** (or copy by hand on Windows), then **`npm run dev`**. See **[doc/dwc-development.md](doc/dwc-development.md)**. Local DWC clones (e.g. **`dwc-env/`**) are **gitignored**.
 

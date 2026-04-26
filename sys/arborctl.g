@@ -21,10 +21,9 @@ if { !exists(global.arborctlLdd) }
 else
     set global.arborctlLdd=false
 
-; If user vars file doesn't exist, run configuration wizard
+; If user vars file doesn't exist, ask the user to configure via DWC plugin and stop loading
 if { !fileexists("0:/sys/arborctl-user-vars.g") }
-    echo { "No user configuration file found. Running configuration wizard." }
-    G8001
+    echo { "ArborCtl: No user configuration found. Open the ArborCTL DWC plugin to configure your spindle, then reset." }
     M99
 
 ; Delete extraneous example uservars
@@ -32,8 +31,7 @@ if { fileexists("0:/sys/arborctl-user-vars.g.example") }
     M472 P{"0:/sys/arborctl-user-vars.g.example" }
 
 ; Load user vars
-if { fileexists("0:/sys/arborctl-user-vars.g") }
-    M98 P"arborctl-user-vars.g"
+M98 P"arborctl-user-vars.g"
 
 ; Verify each ArborCtl configured spindle is a valid RRF Spindle
 while { iterations < #global.arborVFDConfig }

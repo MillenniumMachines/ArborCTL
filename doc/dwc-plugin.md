@@ -1,6 +1,6 @@
 # ArborCTL DWC plugin (`dwc-plugin/`)
 
-The **ArborCTL** panel in [Duet Web Control](https://github.com/Duet3D/DuetWebControl) (DWC) is a single-page editor for `0:/sys/arborctl-user-vars.g`, optional **Manual Modbus** register maps, live **telemetry**, and **Modbus test** probes. The text wizard (**G8001**) remains the canonical fallback.
+The **ArborCTL** panel in [Duet Web Control](https://github.com/Duet3D/DuetWebControl) (DWC) is the canonical configuration UI: a single-page editor for `0:/sys/arborctl-user-vars.g`, optional **Manual Modbus** register maps, live **telemetry**, and **Modbus test** probes.
 
 **Prerequisites:** RepRapFirmware 3.6+, ArborCTL loaded (`M98 P"arborctl.g"` in `config.g`), matching `plugin.json` / `dwcVersion` for your DWC build.
 
@@ -45,7 +45,7 @@ Until you connect to a board, many fields are empty; the form still renders.
 | 3 | Manual Modbus (experimental) | `modbus-manual-experimental` |
 | 4 | TH Servo (preliminary) | `th-servo` |
 
-**TH Servo (preliminary)** — RS485 servo spindle support merged from upstream work (e.g. [PR #17](https://github.com/MillenniumMachines/ArborCTL/pull/17)). The UI shows **min/max RPM** (from RRF spindle limits and rated RPM) instead of Hz summary chips, and labels the Hz nameplate field as a legacy G8001 file field. Firmware: `macro/private/th-servo/`.
+**TH Servo (preliminary)** — RS485 servo spindle support merged from upstream work (e.g. [PR #17](https://github.com/MillenniumMachines/ArborCTL/pull/17)). The UI shows **min/max RPM** (from RRF spindle limits and rated RPM) instead of Hz summary chips, and labels the Hz nameplate field as a legacy file field. Firmware: `macro/private/th-servo/`.
 
 **Manual Modbus (experimental)** — User-defined FC3/FC6 holding-register map (`arborModbusManualSpec`). See [modbus-manual-experimental.md](modbus-manual-experimental.md).
 
@@ -54,9 +54,7 @@ Until you connect to a board, many fields are empty; the form still renders.
 ## Saving configuration
 
 1. **Save to arborctl-user-vars.g** — Writes `M575`, `arborVFDConfig`, `arborMotorSpec`, `arborWizardFreqLimits`, and (if Manual is selected) `arborModbusManualSpec`.
-2. **Save & run VFD config macro** — Uploads the file, runs `M98 P"0:/sys/arborctl-user-vars.g"` so globals match the file, then `M98 P"arborctl/<driver>/config.g"` with the same parameters as G8001 (`B` baud, `C` channel, `A` address, motor and Hz limits). Required so **Manual Modbus** `config.g` sees `arborModbusManualSpec` before probing.
-
-**Run wizard (G8001)** — Opens the stock ArborCTL configuration wizard macro.
+2. **Save & run VFD config macro** — Uploads the file, runs `M98 P"0:/sys/arborctl-user-vars.g"` so globals match the file, then `M98 P"arborctl/<driver>/config.g"` (`B` baud, `C` channel, `A` address, motor and Hz limits). Required so **Manual Modbus** `config.g` sees `arborModbusManualSpec` before probing.
 
 ---
 

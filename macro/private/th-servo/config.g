@@ -1,8 +1,8 @@
 ; th-servo/config.g - UART + Modbus probe (preliminary TH Servo)
 ;
 ; Same parameter contract as other ArborCtl config.g (B baud, C channel, A address,
-; S spindle, W U V F I R motor, T E min/max Hz from wizard). Hz fields are unused
-; for RPM-native servo control but are kept for G8001 / DWC compatibility.
+; S spindle, W U V F I R motor, T E min/max Hz from DWC). Hz fields are unused
+; for RPM-native servo control but are kept for cross-driver parameter parity.
 
 if { !exists(param.A) }
     abort { "ArborCtl: TH Servo - No address specified!" }

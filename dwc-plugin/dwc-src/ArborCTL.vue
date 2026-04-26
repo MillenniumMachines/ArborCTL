@@ -11,8 +11,7 @@
 
         <v-card-subtitle>
             RS485 spindle control for RepRapFirmware 3.6+. Edit all parameters on one page, save to
-            <code>0:/sys/arborctl-user-vars.g</code>, then reboot or run VFD setup. The panel wizard (<b>G8001</b>) remains
-            available as a fallback.
+            <code>0:/sys/arborctl-user-vars.g</code>, then reboot or run VFD setup.
         </v-card-subtitle>
 
         <v-card-text>
@@ -92,6 +91,10 @@
 
             <v-alert v-if="!loaded" class="mt-4" type="warning" outlined dense>
                 ArborCTL has not loaded. Ensure <code>M98 P"arborctl.g"</code> is at the end of <code>config.g</code> and reset the board.
+            </v-alert>
+
+            <v-alert v-if="!hasConfiguredSpindle" class="mt-4" type="warning" outlined dense>
+                No RRF spindle is configured. Define a spindle with <code>M950 R...</code> in <code>config.g</code> before binding it to a VFD here.
             </v-alert>
 
             <v-divider class="my-4" />
@@ -245,12 +248,12 @@
             </v-row>
             <p v-if="isThServo" class="caption grey--text text--darken-1 mt-2 mb-0">
                 TH Servo runs in <b>RPM</b>: the driver uses RRF spindle <b>min</b>/<b>max</b> (RPM) and nameplate rated RPM.
-                <b>Frequency (Hz)</b> below is still saved for <b>G8001</b> / <code>arborWizardFreqLimits</code> compatibility; the TH driver does not use Hz for speed.
+                <b>Frequency (Hz)</b> below is still saved into <code>arborWizardFreqLimits</code> for compatibility; the TH driver does not use Hz for speed.
                 Baud is not on the object model — set it here to match <b>M575</b>.
             </p>
             <p v-else class="caption grey--text text--darken-1 mt-2 mb-0">
-                Hz limits match <b>G8001</b> (capped by motor rated frequency). Baud is not exposed on the object model;
-                set it here to match <b>M575</b> in your user vars file.
+                Hz limits are derived from the RRF spindle min/max and capped by motor rated frequency. Baud is not
+                exposed on the object model; set it here to match <b>M575</b> in your user vars file.
             </p>
 
             <template v-if="isManualModbus">
@@ -311,10 +314,6 @@
                 <v-btn color="secondary" class="mr-2 mb-2" :disabled="uiFrozen || !canSave" :loading="configuring" @click="saveAndConfigureVfd">
                     <v-icon left small>mdi-serial-port</v-icon>
                     Save &amp; run VFD config macro
-                </v-btn>
-                <v-btn class="mr-2 mb-2" outlined color="primary" :disabled="uiFrozen" @click="runWizard">
-                    <v-icon left small>mdi-auto-fix</v-icon>
-                    Run wizard (G8001)
                 </v-btn>
                 <v-btn
                     class="mr-2 mb-2"
@@ -613,10 +612,10 @@ export default Vue.extend({
                     items.push({ text: `Spindle ${i}`, value: i });
                 }
             }
-            if (items.length === 0) {
-                items.push({ text: "Spindle 0", value: 0 });
-            }
             return items;
+        },
+        hasConfiguredSpindle(): boolean {
+            return this.spindleSelectItems.length > 0;
         },
         hzLimits(): { t: number; e: number } {
             const model = (store.state as any)?.machine?.model;
@@ -654,6 +653,9 @@ export default Vue.extend({
             return fallback[this.form.typeIndex] || "huanyang-hy02d223b";
         },
         canSave(): boolean {
+            if (!this.hasConfiguredSpindle) {
+                return false;
+            }
             const hz = this.hzLimits;
             const base =
                 this.form.address >= 1 &&
@@ -847,13 +849,6 @@ export default Vue.extend({
                 console.error("[ArborCTL] VFD config failed", e);
             } finally {
                 this.configuring = false;
-            }
-        },
-        async runWizard(): Promise<void> {
-            try {
-                await store.dispatch("machine/sendCode", { code: "G8001" });
-            } catch (e) {
-                console.error("[ArborCTL] Failed to start wizard", e);
             }
         },
         async testModbusProbe(): Promise<void> {

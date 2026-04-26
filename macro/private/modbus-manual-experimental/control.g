@@ -50,7 +50,7 @@ if { global.arborState[param.S][0] == null }
         set global.arborState[param.S][3] = { var.wfl[0], var.wfl[1] }
         echo { "ArborCtl: Manual Modbus (experimental) motor data from wizard." }
     else
-        abort { "ArborCtl: Manual Modbus - configure motor + Hz limits (G8001 / DWC) first." }
+        abort { "ArborCtl: Manual Modbus - configure motor + Hz limits in the DWC plugin first." }
 
 if { global.arborVFDStatus[param.S] == null }
     set global.arborVFDStatus[param.S] = { vector(5, 0) }
