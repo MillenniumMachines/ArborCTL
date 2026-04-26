@@ -109,5 +109,6 @@ Huanyang ignores `R`; use **Test Modbus** to confirm wiring and addressing befor
 - **Plugin missing in `npm run dev`:** Use a real recursive copy, not a junction on Windows; re-run `setup-dwc-dev.sh` (or `xcopy /E /I` on plain Windows); clear site data for `localhost` if old DWC `localStorage` hides the plugin.
 - **Test Modbus always fails:** Baud, address, AUX port, termination, and that the VFD is powered; for FC3, confirm register `R` matches the manual.
 - **Telemetry empty:** Daemon running, spindle configured in ArborCTL, and `arborVFDCommReady` true after a successful config.
+- **`meta command: GCode command too long`:** Known RRF parser limit. In ArborCTL macro sources, avoid very long single lines (especially large `if { ... }` expressions and long string assignments). Split logic into temporary variables and build long messages in multiple `set` steps.
 
 For upstream packaging and CNC dashboard defaults, see [dwc-development.md](dwc-development.md).

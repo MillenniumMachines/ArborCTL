@@ -307,11 +307,7 @@
             <v-divider class="my-4" />
 
             <div class="d-flex flex-wrap align-center">
-                <v-btn color="primary" class="mr-2 mb-2" :disabled="uiFrozen || !canSave" :loading="saving" @click="saveUserVars">
-                    <v-icon left small>mdi-content-save</v-icon>
-                    Save to arborctl-user-vars.g
-                </v-btn>
-                <v-btn color="secondary" class="mr-2 mb-2" :disabled="uiFrozen || !canSave" :loading="configuring" @click="saveAndConfigureVfd">
+                <v-btn color="primary" class="mr-2 mb-2" :disabled="uiFrozen || !canSave" :loading="configuring" @click="saveAndConfigureVfd">
                     <v-icon left small>mdi-serial-port</v-icon>
                     Save &amp; run VFD config macro
                 </v-btn>

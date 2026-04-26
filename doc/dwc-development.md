@@ -68,3 +68,4 @@ Release builds use `dist/build-dwc-plugin.sh`; that does **not** require `src/pl
 - **Plugin still not listed after fix**: **Clear site data** for `http://localhost:8080` (old `settings` in localStorage can override new defaults and skip loading ArborCTL).
 - **Compile errors**: Match DWC version to `dwcVersion` in `plugin.json`.
 - **Disconnected / empty globals**: The UI still renders; object model fields fill in after connecting to a board.
+- **`meta command: GCode command too long` on RRF**: Keep ArborCTL macro source lines short. Very long single-line expressions (especially `if { ... }` chains and long string literals) can exceed RRF parser limits; split into helper vars and incremental string concatenation.

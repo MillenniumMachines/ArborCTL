@@ -65,6 +65,11 @@ var baudRateValue = { param.B == 4800 ? 0 : param.B == 9600 ? 1 : param.B == 192
 if { var.baudRateValue == -1 }
     abort { "ArborCtl: Huanyang HY02D223B - Invalid baud rate specified. Supported baud rates are 4800, 9600, 19200, and 38400." }
 
+; Pause daemon polling for this spindle while config writes are in progress.
+; Otherwise control.g can interleave Modbus calls and corrupt replies.
+if { exists(global.arborVFDCommReady) }
+    set global.arborVFDCommReady[param.S] = false
+
 if { exists(param.D) && param.D == 1 }
     echo { "ArborCtl: Huanyang HY02D223B - Factory reset over RS485 is not implemented. Continuing without reset." }
 
@@ -115,9 +120,6 @@ while { var.vfdCommReady == null }
 
     if { var.probeSuccess }
         set var.vfdCommReady = true
-        ; Mark this spindle as communication-ready so the daemon can call control.g
-        if { exists(global.arborVFDCommReady) }
-            set global.arborVFDCommReady[param.S] = true
         if { exists(global.arborVFDConfig) && global.arborVFDConfig[param.S] != null }
             ; Persist detected channel in-memory for this session.
             set global.arborVFDConfig[param.S][1] = var.commChannel
@@ -129,7 +131,11 @@ while { var.vfdCommReady == null }
                 echo { "ArborCtl: Huanyang HY02D223B - Auto-corrected UART channel to P" ^ var.commChannel }
     else
         var hyTitle = "ArborCtl: Huanyang HY02D223B Setup"
-        var promptNoComms = "Unable to communicate with the Huanyang HY02D223B VFD. Check RS485 wiring, address <b>" ^ param.A ^ "</b>, and baud <b>" ^ param.B ^ "</b>.<br/><br/>On the VFD panel set RS485: typically <b>PD163</b> address, <b>PD164</b> baud, <b>PD165</b>=3 (RTU 8N1), <b>PD001</b>=2, <b>PD002</b>=2. Full notes: <b>doc/hy02d223b-protocol-notes.md</b> in the ArborCTL repo.<br/><br/>Power-cycle the VFD, then press OK to retry probing."
+        var promptNoComms = "Unable to communicate with the Huanyang HY02D223B VFD."
+        set var.promptNoComms = { var.promptNoComms ^ " Check RS485 wiring, address <b>" ^ param.A ^ "</b>, and baud <b>" ^ param.B ^ "</b>." }
+        set var.promptNoComms = { var.promptNoComms ^ "<br/><br/>On the VFD panel set RS485: typically <b>PD163</b> address, <b>PD164</b> baud, <b>PD165</b>=3 (RTU 8N1)," }
+        set var.promptNoComms = { var.promptNoComms ^ " <b>PD001</b>=2, <b>PD002</b>=2. Full notes: <b>doc/hy02d223b-protocol-notes.md</b> in the ArborCTL repo." }
+        set var.promptNoComms = { var.promptNoComms ^ "<br/><br/>Power-cycle the VFD, then press OK to retry probing." }
         M291 P{var.promptNoComms} R{var.hyTitle} S3 T0 J2
         if { result == -1 }
             abort { "ArborCtl: Operator aborted configuration wizard!" }
@@ -179,6 +185,8 @@ while { var.idx < #var.statusVector }
     set var.idx = { var.idx + 1 }
 
 if { var.successCount > 0 }
+    if { exists(global.arborVFDCommReady) }
+        set global.arborVFDCommReady[param.S] = true
     set global.arborState[param.S][0] = null
     set global.arborState[param.S][3] = null
     set global.arborState[param.S][1] = false
