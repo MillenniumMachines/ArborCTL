@@ -39,7 +39,7 @@ set global.sl3ConfigParams[4] = { {10501, {ceil(param.W * 100), param.U, param.V
 ; ========== FREQUENCY PARAMETERS ==========
 ; P.3/01-03 - Base frequency: 400.00Hz
 
-; Multiply by 100 to match VFD register format
+; T/E are provided in Hz from ArborCTL; multiply by 100 to match VFD register format (0.01Hz).
 var minFreq = { ceil(param.T * 100) }
 var maxFreq = { ceil(param.E * 100) }
 

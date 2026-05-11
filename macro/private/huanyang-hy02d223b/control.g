@@ -64,8 +64,6 @@ if { global.arborState[param.S][3] == null }
         var freqConv = { vector(1, 1.0) }
         set global.arborState[param.S][0] = { var.motorCfg, var.freqConv, 0 }
         set global.arborState[param.S][3] = { var.wizFl[0], var.wizFl[1] }
-        echo { "ArborCtl: Huanyang motor data from wizard (PD reads skipped)." }
-        echo { "  Min Hz=" ^ var.wizFl[0] ^ " Max Hz=" ^ var.wizFl[1] }
     if { !var.haveWizardMotor }
         ; Avoid fragile PD readback during runtime init on Huanyang clones.
         ; Use conservative defaults so start/stop control can still run.
@@ -82,7 +80,6 @@ if { global.arborState[param.S][3] == null }
         var freqConv = { vector(1, 1.0) }
         set global.arborState[param.S][0] = { var.motorCfg, var.freqConv, 0 }
         set global.arborState[param.S][3] = { var.fallbackMinFreq, var.fallbackMaxFreq }
-        echo { "ArborCtl: Huanyang fallback motor data active for spindle " ^ param.S ^ "." }
 
 ; Determine what the spindle should be doing based on RRF's state
 var shouldRun = { (spindles[param.S].state == "forward" || spindles[param.S].state == "reverse") && spindles[param.S].active > 0 }
@@ -109,9 +106,6 @@ var badSetFreq = { var.rawSetFreq == null || #var.rawSetFreq < 5 }
 var badOutFreq = { var.rawOutFreq == null || #var.rawOutFreq < 5 }
 var badOutCurrent = { var.rawCurrent == null || #var.rawCurrent < 5 }
 var haveStatusFrame = { !(var.badSetFreq || var.badOutFreq || var.badOutCurrent) }
-if { !var.haveStatusFrame }
-    echo { "ArborCtl: Huanyang status poll incomplete on spindle " ^ param.S ^ " (continuing with best-effort control)." }
-
 ; Parse values from the responses
 var setFreq = 0.0
 var currentFreq = 0.0
@@ -137,7 +131,6 @@ var commandChange = { false }
 
 ; Stop spindle as early as possible if it should not be running
 if { !var.shouldRun && var.vfdRunning }
-    echo { "ArborCtl: Stopping spindle " ^ param.S }
     ; Set frequency to 0
     M2604 P{param.C} A{param.A} B{{0x05, 0x02, 0x00, 0x00}} R4
     G4 P{var.cmdWait}
@@ -165,14 +158,12 @@ elif { var.shouldRun }
     var currentScaledFreq = { floor(var.setFreq * 100) }
 
     if { var.currentScaledFreq != var.scaledFreq }
-        echo { "ArborCtl: Setting spindle " ^ param.S ^ " frequency to " ^ var.newFreq ^ " Hz" }
         M2604 P{param.C} A{param.A} B{{0x05, 0x02, var.freqHigh, var.freqLow}} R4
         G4 P{var.cmdWait}
         set var.commandChange = { true }
 
     ; After restart, direction is unknown - stop before reissuing
     if { var.vfdRunning && var.trackedDirection == 0 }
-        echo { "ArborCtl: Spindle " ^ param.S ^ " direction is unknown - stopping before restart" }
         M2604 P{param.C} A{param.A} B{{0x05, 0x02, 0x00, 0x00}} R4
         G4 P{var.cmdWait}
         M2604 P{param.C} A{param.A} B{{0x03, 0x01, 0x08}} R3
@@ -183,7 +174,6 @@ elif { var.shouldRun }
     ; Start spindle in the requested direction if needed
     elif { spindles[param.S].state == "forward" }
         if { !var.vfdRunning || !var.vfdForward }
-            echo { "ArborCtl: Starting spindle " ^ param.S ^ " in forward direction" }
             M2604 P{param.C} A{param.A} B{{0x03, 0x01, 0x01}} R3
             G4 P{var.cmdWait}
             set var.reportedDirection = { 1 }
@@ -191,7 +181,6 @@ elif { var.shouldRun }
 
     elif { spindles[param.S].state == "reverse" }
         if { !var.vfdRunning || !var.vfdReverse }
-            echo { "ArborCtl: Starting spindle " ^ param.S ^ " in reverse direction" }
             M2604 P{param.C} A{param.A} B{{0x03, 0x01, 0x11}} R3
             G4 P{var.cmdWait}
             set var.reportedDirection = { -1 }

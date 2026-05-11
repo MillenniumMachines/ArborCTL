@@ -10,13 +10,16 @@ if { !exists(param.C) }
 if { !exists(param.S) }
     abort { "ArborCtl: No spindle specified!" }
 
-var motorAddr    = 10501
-var limitsAddr   = 10100
-var freqConvAddr = 10008
-var statusAddr   = 4097
-var freqAddr     = 4098
-var powerAddr    = 4123
-var errorAddr    = 4103
+var motorAddr             = 10501
+var limitsAddr            = 10100
+var freqConvAddr          = 10008
+var statusAddr            = 0x1001
+var freqAddr              = 0x1002
+var outputCurrentAddr     = 0x1004
+var powerAddr             = 4123
+var errorAddr             = 4103
+var ratedCurrentAddrGroup = 0x290D ; 05-05
+var ratedCurrentAddrParam = 0x0132 ; P.306
 
 var shouldRun = { (spindles[param.S].state == "forward" || spindles[param.S].state == "reverse") && spindles[param.S].active > 0 }
 var wasRunning = { global.arborVFDStatus[param.S] != null ? global.arborVFDStatus[param.S][0] : false }
@@ -32,7 +35,7 @@ if { global.arborState[param.S][0] == null }
     M2601 E0 P{param.C} A{param.A} F3 R{var.motorAddr} B6
     var motorCfg = { global.arborRetVal }
 
-    ; 0 = Max Frequency, 1 = Min Frequency
+    ; 0 = Max Frequency (0.01Hz), 1 = Min Frequency (0.01Hz)
     M2601 E0 P{param.C} A{param.A} F3 R{var.limitsAddr} B2
     var spindleLimits = { global.arborRetVal }
 
@@ -48,6 +51,7 @@ if { global.arborState[param.S][0] == null }
     set var.motorCfg[3]      = { var.motorCfg[3] / 100 }
     set var.motorCfg[4]      = { var.motorCfg[4] / 100 }
     set var.motorCfg[5]      = { var.motorCfg[5] * 10 }
+    ; Convert 0.01Hz register values to Hz for runtime calculations.
     set var.spindleLimits[0] = { ceil(var.spindleLimits[0] / 100) }
     set var.spindleLimits[1] = { floor(var.spindleLimits[1] / 100) }
 
@@ -61,7 +65,10 @@ if { global.arborState[param.S][0] == null }
     echo { "ArborCTL Shihlin SL3 Configuration: "}
     echo { "  Power=" ^ var.motorCfg[0] ^ "W, Poles=" ^ var.motorCfg[1] ^ ", Voltage=" ^ var.motorCfg[2] ^ "V" }
     echo { "  Frequency=" ^ var.motorCfg[3] ^ "Hz, Current=" ^ var.motorCfg[4] ^ "A, Speed=" ^ var.motorCfg[5] ^ "RPM" }
-    echo { "  Max Speed=" ^ var.spindleLimits[0] ^ ", Min Speed=" ^ var.spindleLimits[1] ^ " SpeedFactor=" ^ var.freqConv[0] }
+    var maxRpmFromLimit = { (var.spindleLimits[0] * 120) / var.motorCfg[1] }
+    var minRpmFromLimit = { (var.spindleLimits[1] * 120) / var.motorCfg[1] }
+    echo { "  Max Freq=" ^ var.spindleLimits[0] ^ "Hz, Min Freq=" ^ var.spindleLimits[1] ^ "Hz, SpeedFactor=" ^ var.freqConv[0] }
+    echo { "  Implied Max RPM=" ^ var.maxRpmFromLimit ^ ", Implied Min RPM=" ^ var.minRpmFromLimit }
 
     ; Store VFD-specific configuration in internal state
     set global.arborState[param.S][0] = { var.motorCfg, var.freqConv }
@@ -85,8 +92,8 @@ if { var.spindleState == null }
     M5
     abort { "ArborCtl: Failed to read spindle state!" }
 
-; Check if VFD is in emergency stop
-if { var.spindleState[0] == 128 }
+; Check if VFD is in emergency stop (bit 7)
+if { mod(floor(var.spindleState[0] / 128), 2) == 1 }
     echo { "ArborCtl: VFD in emergency stop!" }
     set global.arborState[param.S][4] = true
     M99
@@ -98,16 +105,27 @@ if { var.spindleState[5] > 0 }
     M99
 
 ; Extract status bits from spindleState using modulo and division
-; Bit 0: Running (0=stopped, 1=running)
 ; Bit 1: Forward (1=forward)
 ; Bit 2: Reverse (1=reverse)
 ; Bit 3: Speed reached (0=not reached, 1=reached)
-var vfdRunning = { mod(var.spindleState[0], 2) == 1 }
+; Bit 7: Emergency stop
+var vfdRunning = { mod(floor(var.spindleState[0] / 2), 2) == 1 || mod(floor(var.spindleState[0] / 4), 2) == 1 }
 var vfdForward = { mod(floor(var.spindleState[0] / 2), 2) == 1 }
 var vfdReverse = { mod(floor(var.spindleState[0] / 4), 2) == 1 }
 var vfdSpeedReached = { mod(floor(var.spindleState[0] / 8), 2) == 1 }
 var vfdInputFreq = { var.spindleState[1] }
 var vfdOutputFreq = { var.spindleState[2] }
+; Shihlin output current register 0x1004 is in 0.01A units.
+var outputCurrentA = { var.spindleState[3] / 100.0 }
+
+; Read rated current explicitly from motor parameter register:
+; group mode 05-05 (0x290D), fallback to parameter mode P.306 (0x0132).
+M2601 E0 P{param.C} A{param.A} F3 R{var.ratedCurrentAddrGroup} B1
+var ratedCurrentRaw = { global.arborRetVal }
+if { var.ratedCurrentRaw == null || #var.ratedCurrentRaw != 1 }
+    M2601 E0 P{param.C} A{param.A} F3 R{var.ratedCurrentAddrParam} B1
+    set var.ratedCurrentRaw = { global.arborRetVal }
+var ratedCurrentA = { var.ratedCurrentRaw != null && #var.ratedCurrentRaw == 1 ? (var.ratedCurrentRaw[0] / 100.0) : null }
 
 ; Calculate power consumption
 if { var.spindlePower == null }
@@ -131,34 +149,16 @@ if { !var.shouldRun && var.vfdRunning }
 
     set global.arborState[param.S][1] = { true }
 elif { var.shouldRun }
-    ; Calculate the frequency to set based on the rpm requested,
-    ; the max and min frequencies, the number of poles
-    ; and the conversion factor.
-    ; The conversion factor is the RPM that the spindle runs at with a 60Hz input.
+    ; Calculate commanded frequency from requested spindle RPM.
+    ; VFD frequency registers use 0.01Hz units, so convert at the end.
     var numPoles   = { global.arborState[param.S][0][0][1] }
-    var convFactor = { global.arborState[param.S][0][1][0] }
     var maxFreq    = { global.arborState[param.S][3][0] }
     var minFreq    = { global.arborState[param.S][3][1] }
-
-    ; If the VFD conversion factor is set to 60, then we can simply give the VFD
-    ; the spindle RPM and it will calculate the frequency for us.
-    ; If we do this calculation ourselves, there is a possibility of slight
-    ; inaccuracy as we need to send round integers to the VFD.
-    var newFreq = { abs(spindles[param.S].current) }
-
-    if { var.convFactor != 60 }
-        ; RPM = 120 x f / poles.
-        ; f = RPM x poles / 120
-        ; Adjust for the conversion factor and divide by
-        ; 60 to normalise to Hz.
-
-        ; Account for new convFactor
-        ; Clamp the frequency to the limits and ensure we get a valid result
-        ; We have to split this into multiple variables to avoid stack overflow
-        var freqT = { abs(spindles[param.S].current) * var.numPoles) / 120 }
-        var freqL = { min(var.maxFreq, max(var.minFreq, var.freqT)) }
-        set var.newFreq = { ceil(var.freqL * var.convFactor) }
-
+    var requestedRpm = { abs(spindles[param.S].active) }
+    ; RPM = 120 * f / poles  =>  f = RPM * poles / 120
+    var freqTargetHz = { (var.requestedRpm * var.numPoles) / 120.0 }
+    var freqLimitedHz = { min(var.maxFreq, max(var.minFreq, var.freqTargetHz)) }
+    var newFreq = { ceil(var.freqLimitedHz * 100.0) }
     ; Set input frequency if it doesn't match the RRF value
     if { var.vfdInputFreq != var.newFreq }
         M2600 E0 P{param.C} A{param.A} F6 R{var.freqAddr} B{var.newFreq,}
@@ -200,9 +200,12 @@ set global.arborVFDStatus[param.S][4] = { var.isStable }
 if { global.arborVFDPower[param.S] == null }
     set global.arborVFDPower[param.S] = { vector(2, 0) }
 
-set global.arborVFDPower[param.S][0] = { var.spindlePower }
+; For Shihlin, expose actual output current as the primary telemetry metric.
+set global.arborVFDPower[param.S][0] = { var.outputCurrentA }
 
-; Calculate and update load percentage if motor power is known
-if { global.arborMotorSpec[param.S] != null }
-    var loadPercent = { var.spindlePower / (global.arborState[param.S][0][0][0] * 1000) * 100 }
-    set global.arborVFDPower[param.S][1] = { var.loadPercent }
+; Load = actual output current / rated motor current.
+if { var.ratedCurrentA != null && var.ratedCurrentA > 0 }
+    var loadPercent = { (var.outputCurrentA / var.ratedCurrentA) * 100.0 }
+    set global.arborVFDPower[param.S][1] = { max(var.loadPercent, 0) }
+else
+    set global.arborVFDPower[param.S][1] = 0

@@ -48,7 +48,6 @@ if { global.arborState[param.S][0] == null }
         var freqConv = { vector(1, 1.0) }
         set global.arborState[param.S][0] = { var.motorCfg, var.freqConv, 0 }
         set global.arborState[param.S][3] = { var.wfl[0], var.wfl[1] }
-        echo { "ArborCtl: Manual Modbus (experimental) motor data from wizard." }
     else
         abort { "ArborCtl: Manual Modbus - configure motor + Hz limits in the DWC plugin first." }
 

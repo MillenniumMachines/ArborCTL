@@ -36,7 +36,6 @@ if { global.arborState[param.S][0] == null }
         var freqConv = { vector(1, 1.0) }
         set global.arborState[param.S][0] = { var.motorCfg, var.freqConv }
         set global.arborState[param.S][3] = { var.spindleLimits }
-        echo { "ArborCtl: TH Servo (preliminary) motor data from wizard." }
     else
         ; Default: 750W, 220V, 3000 RPM rated (matches upstream PR #17)
         var motorCfg = { vector(6, 0) }
@@ -108,7 +107,6 @@ var isStable = { var.wasRunning && (var.diff < max(50, var.currentSpeedCommand *
 ; Action & motion
 ; ---------------------------------------------------------------------
 if { !var.shouldRun && var.wasRunning }
-    echo { "ArborCtl: Stopping spindle " ^ param.S }
     M98 P"arborctl/delay-for-command.g"
     M2600 E0 P{param.C} A{param.A} F6 R{4112} B{0,}
     set global.arborState[param.S][1] = { true }

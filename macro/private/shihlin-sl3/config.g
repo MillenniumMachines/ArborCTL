@@ -6,8 +6,8 @@
 ; B - Baud rate
 ; C - Communication channel (UART port)
 ; S - Spindle ID to configure
-; T - Spindle Minimum Speed (RPM)
-; E - Spindle Maximum Speed (RPM)
+; T - Spindle minimum frequency (Hz)
+; E - Spindle maximum frequency (Hz)
 ; W - Motor rated power (kW)
 ; U - Motor poles (2, 4, 6, 8)
 ; V - Motor rated voltage (V)
@@ -194,6 +194,14 @@ if { var.successCount == 0}
 if { var.successCount < #global.sl3ConfigParams }
     echo { "ArborCtl: Shihlin-SL3 - Warning: Some parameters could not be set. Check VFD communication." }
 else
+    ; Drop cached runtime state so control.g reloads fresh limits/motor data.
+    set global.arborState[param.S][0] = null
+    set global.arborState[param.S][3] = null
+    set global.arborState[param.S][1] = false
+    set global.arborState[param.S][2] = false
+    set global.arborState[param.S][4] = false
+    set global.arborVFDStatus[param.S] = null
+    set global.arborVFDPower[param.S] = null
     M291 P{"VFD Configuration <b>successful</b>.<br/>" ^ var.successCount ^ " of " ^ #global.sl3ConfigParams ^ " config batches set successfully."} R"ArborCtl: Shihlin-SL3" S0 T5
 
     ; Restart the VFD to apply settings if requested

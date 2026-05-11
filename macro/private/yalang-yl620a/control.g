@@ -43,12 +43,6 @@ if { global.arborState[param.S][0] == null }
     set var.spindleLimits[0] = { ceil(var.spindleLimits[0] / 10) }
     set var.spindleLimits[1] = { floor(var.spindleLimits[1] / 10) }
 
-    ; Handle the case when frequency conversion factor is 0 or null
-
-    echo { "ArborCTL Yalang YL620-A Configuration: "}
-    echo { "  Current=" ^ var.motorCfg[0] ^ "A, Voltage=" ^ var.motorCfg[1] ^ "V, Poles=" ^ var.motorCfg[2] }
-    echo { "  Max Speed=" ^ var.spindleLimits[0] ^ ", Min Speed=" ^ var.spindleLimits[1] }
-
     ; Store VFD-specific configuration in internal state
     set global.arborState[param.S][0] = { var.motorCfg }
     set global.arborState[param.S][3] = { var.spindleLimits }

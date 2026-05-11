@@ -50,7 +50,7 @@
                             <th class="text-right">Hz</th>
                             <th class="text-right">RPM</th>
                             <th class="text-left">Stable</th>
-                            <th class="text-right">Power (W)</th>
+                            <th class="text-right">Power / Current</th>
                             <th class="text-left" style="min-width: 120px;">Load %</th>
                         </tr>
                     </thead>
@@ -307,9 +307,9 @@
             <v-divider class="my-4" />
 
             <div class="d-flex flex-wrap align-center">
-                <v-btn color="primary" class="mr-2 mb-2" :disabled="uiFrozen || !canSave" :loading="configuring" @click="saveAndConfigureVfd">
+                <v-btn color="primary" class="mr-2 mb-2" :disabled="uiFrozen || !canSave" :loading="configuring" @click="saveParamsAndWriteVfdCommands">
                     <v-icon left small>mdi-serial-port</v-icon>
-                    Save &amp; run VFD config macro
+                    Save parameters &amp; write VFD commands
                 </v-btn>
                 <v-btn
                     class="mr-2 mb-2"
@@ -820,7 +820,21 @@ export default Vue.extend({
                 this.saving = false;
             }
         },
-        async saveAndConfigureVfd(): Promise<void> {
+        async writeVfdCommands(): Promise<void> {
+            const f = this.form;
+            const hz = this.hzLimits;
+            const internal = this.internalName;
+            // Reload user vars so globals (e.g. arborModbusManualSpec) match the file we just uploaded
+            // before config.g reads them — especially for Manual Modbus (experimental).
+            await store.dispatch("machine/sendCode", {
+                code: 'M98 P"0:/sys/arborctl-user-vars.g"'
+            });
+            const code =
+                `M98 P"arborctl/${internal}/config.g" B${f.baud} C${f.channel} A${f.address} S${f.spindleId} ` +
+                `W${f.motorW} U${f.motorPoles} V${f.motorV} F${f.motorF} I${f.motorI} R${f.motorR} T${hz.t} E${hz.e}`;
+            await store.dispatch("machine/sendCode", { code });
+        },
+        async saveParamsAndWriteVfdCommands(): Promise<void> {
             this.saveError = "";
             this.configuring = true;
             try {
@@ -828,18 +842,7 @@ export default Vue.extend({
                 if (this.saveError) {
                     return;
                 }
-                const f = this.form;
-                const hz = this.hzLimits;
-                const internal = this.internalName;
-                // Reload user vars so globals (e.g. arborModbusManualSpec) match the file we just uploaded
-                // before config.g reads them — especially for Manual Modbus (experimental).
-                await store.dispatch("machine/sendCode", {
-                    code: 'M98 P"0:/sys/arborctl-user-vars.g"'
-                });
-                const code =
-                    `M98 P"arborctl/${internal}/config.g" B${f.baud} C${f.channel} A${f.address} S${f.spindleId} ` +
-                    `W${f.motorW} U${f.motorPoles} V${f.motorV} F${f.motorF} I${f.motorI} R${f.motorR} T${hz.t} E${hz.e}`;
-                await store.dispatch("machine/sendCode", { code });
+                await this.writeVfdCommands();
             } catch (e) {
                 this.saveError = e instanceof Error ? e.message : String(e);
                 console.error("[ArborCTL] VFD config failed", e);
