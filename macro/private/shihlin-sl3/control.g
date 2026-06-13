@@ -19,11 +19,6 @@ var powerAddr    = 4123
 var errorAddr    = 4103
 
 var shouldRun = { (spindles[param.S].state == "forward" || spindles[param.S].state == "reverse") && spindles[param.S].active > 0 }
-var wasRunning = { global.arborVFDStatus[param.S] != null ? global.arborVFDStatus[param.S][0] : false }
-
-if { !var.shouldRun && !var.wasRunning }
-    ; Spindle should not be running and wasn't running last iteration - skip rest of control
-    M99
 
 ; Gather Motor Configuration from VFD if not already loaded
 if { global.arborState[param.S][0] == null }
@@ -87,15 +82,20 @@ if { var.spindleState == null }
 
 ; Check if VFD is in emergency stop
 if { var.spindleState[0] == 128 }
-    echo { "ArborCtl: VFD in emergency stop!" }
+    if { global.arborState[param.S][4] == false }
+        echo { "ArborCtl: VFD in emergency stop!" }
     set global.arborState[param.S][4] = true
     M99
 
 ; Check for VFD errors
 if { var.spindleState[5] > 0 }
-    echo { "ArborCtl: VFD Error detected. Code=" ^ var.spindleState[5] }
+    if { global.arborState[param.S][4] == false }
+        echo { "ArborCtl: VFD Error detected. Code=" ^ var.spindleState[5] }
     set global.arborState[param.S][4] = true
     M99
+
+; Reset error state if no errors detected
+set global.arborState[param.S][4] = { false }
 
 ; Extract status bits from spindleState using modulo and division
 ; Bit 0: Running (0=stopped, 1=running)
@@ -121,6 +121,7 @@ if { (var.vfdRunning && !var.vfdForward && !var.vfdReverse) || (!var.vfdRunning 
     echo { "ArborCtl: Invalid spindle state detected - emergency VFD stop issued!" }
     M112
 
+var commandChange = { false }
 ; Stop spindle as early as possible if it should not be running
 if { !var.shouldRun && var.vfdRunning }
     echo { "ArborCtl: Stopping spindle " ^ param.S }
@@ -128,8 +129,8 @@ if { !var.shouldRun && var.vfdRunning }
     M2600 E0 P{param.C} A{param.A} F6 R{var.statusAddr} B{0,}
     ; Set frequency to 0
     M2600 E0 P{param.C} A{param.A} F6 R{var.freqAddr} B{0,}
+    set var.commandChange = { true }
 
-    set global.arborState[param.S][1] = { true }
 elif { var.shouldRun }
     ; Calculate the frequency to set based on the rpm requested,
     ; the max and min frequencies, the number of poles
@@ -162,28 +163,30 @@ elif { var.shouldRun }
     ; Set input frequency if it doesn't match the RRF value
     if { var.vfdInputFreq != var.newFreq }
         M2600 E0 P{param.C} A{param.A} F6 R{var.freqAddr} B{var.newFreq,}
-        set global.arborState[param.S][1] = { true }
+        set var.commandChange = { true }
 
     ; Set spindle direction forward if needed
     if { spindles[param.S].state == "forward" && (!var.vfdRunning || !var.vfdForward) }
         M2600 E0 P{param.C} A{param.A} F6 R{var.statusAddr} B{2,}
-        set global.arborState[param.S][1] = { true }
+        set var.commandChange = { true }
 
     ; Set spindle direction reverse if needed
     elif { spindles[param.S].state == "reverse" && (!var.vfdRunning || !var.vfdReverse) }
         M2600 E0 P{param.C} A{param.A} F6 R{var.statusAddr} B{4,}
-        set global.arborState[param.S][1] = { true }
+        set var.commandChange = { true }
+
+set global.arborState[param.S][1] = { var.commandChange }
+
+; Acknowledge pending request since any change is speed, direction has been processed
+set global.arborState[param.S][5] = { false }
 
 ; Calculate current RPM from output frequency
 var currentFrequency = { var.vfdOutputFreq * 0.01 } ; Convert to Hz
 var currentRPM       = { var.currentFrequency * 60 / (global.arborState[param.S][0][0][1] / 2) }
-var isStable         = { var.vfdRunning && var.vfdSpeedReached }
+var isStable         = { var.vfdSpeedReached }
 
 ; Save previous stability flag for stability change detection
 set global.arborState[param.S][2] = { global.arborVFDStatus[param.S] != null ? global.arborVFDStatus[param.S][4] : false }
-
-; Update internal state
-set global.arborState[param.S][4] = { var.spindleState[5] > 0 }
 
 ; Update public status variables
 ; Set or initialize VFD status array
