@@ -21,17 +21,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
-      - name: Clone DuetWebControl (matches dwc-plugin plugin.json dwcVersion)
+      - name: Clone DuetWebControl (matches NeXT v0.7.0 / DWC 3.7 pin)
         run: |
-          git clone --depth 1 -b v3.6.1 https://github.com/Duet3D/DuetWebControl.git dwc-work
+          git clone --depth 1 -b v3.7.0-beta.1 https://github.com/Duet3D/DuetWebControl.git dwc-work
           cd dwc-work
           npm ci || npm install
 
       - name: Build plugin zip
         run: |
-          chmod +x dist/build-dwc-plugin.sh
+          chmod +x dist/build-dwc-plugin.sh dist/check-node-for-dwc-build.sh
           dist/build-dwc-plugin.sh "$(pwd)/dwc-work" "${{ github.ref_name }}"
 
       - name: Publish GitHub Release

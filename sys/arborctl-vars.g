@@ -1,10 +1,10 @@
 ; arborctl-vars.g - Variables required for ArborCtl RS485 spindle control
 
 ; Available Spindle / VFD models
-global arborAvailableModels = { "Shihlin SL3", "Huanyang HY02D223", "Yalang YL620-A", "Manual Modbus (experimental)", "TH Servo (preliminary)" }
-global arborModelInternalNames = { "shihlin-sl3", "huanyang-hy02d223b", "yalang-yl620a", "modbus-manual-experimental", "th-servo" }
-global arborModelDefaultAddress = { 1, 1, 10, 1, 1 }
-global arborModelDefaultBaudRateIndex = { 1, 1, 2, 1, 2 }
+global arborAvailableModels = { "Shihlin SL3", "Huanyang HY02D223", "Yalang YL620-A", "Manual Modbus (experimental)", "TH Servo (preliminary)", "H100" }
+global arborModelInternalNames = { "shihlin-sl3", "huanyang-hy02d223b", "yalang-yl620a", "modbus-manual-experimental", "th-servo", "h100" }
+global arborModelDefaultAddress = { 1, 1, 10, 1, 1, 1 }
+global arborModelDefaultBaudRateIndex = { 1, 1, 2, 1, 2, 1 }
 
 ; Return value for last M2600 or M2601 command
 global arborRetVal = { null }

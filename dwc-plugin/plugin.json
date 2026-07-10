@@ -11,8 +11,20 @@
         "rs485",
         "cnc"
     ],
-    "dwcVersion": "3.6",
+    "dwcVersion": "auto",
     "dwcDependencies": [],
-    "rrfVersion": "3.6",
-    "sbcPermissions": []
+    "rrfVersion": "auto-major",
+    "sbcPermissions": [],
+    "data": {
+        "nxt": {
+            "tag": "nxt-plugin",
+            "enabled": true,
+            "loadOrder": 30,
+            "failureMode": "soft",
+            "entrypoints": {
+                "init": "plugins/arborctl/arborctl-init.g",
+                "daemon": "plugins/arborctl/arborctl-daemon-hook.g"
+            }
+        }
+    }
 }

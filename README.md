@@ -1,6 +1,6 @@
 # ArborCTL
 
-**ArborCTL** is a macro framework for [RepRapFirmware](https://github.com/Duet3D/RepRapFirmware) **3.6+** that implements **RS-485 / Modbus RTU** spindle control, status feedback, and optional load-aware behaviour across several VFD (and experimental servo) profiles.
+**ArborCTL** is a macro framework for [RepRapFirmware](https://github.com/Duet3D/RepRapFirmware) **3.6+ / 3.7+** that implements **RS-485 / Modbus RTU** spindle control, status feedback, and optional load-aware behaviour across several VFD (and experimental servo) profiles. The DWC plugin targets **Duet Web Control 3.7** (Vue 3 / Vite; rebuild the ZIP against your host DWC version).
 
 ---
 
@@ -20,8 +20,8 @@
 ## What you get
 
 - **Per-spindle configuration** (UART, baud, Modbus address, motor nameplate, Hz limits from RRF).
-- **Drivers** under `0:/sys/arborctl/<model>/` — Shihlin SL3, Huanyang HY02D223, Yalang YL620-A, **Manual Modbus (experimental)**, **TH Servo (preliminary)**.
-- **Daemon** (`arborctl-daemon.g`) polling VFDs and filling **object model** globals (`arborVFDStatus`, `arborVFDPower`, etc.).
+- **Drivers** under `0:/sys/arborctl/<model>/` — Shihlin SL3, Huanyang HY02D223, Yalang YL620-A, **Manual Modbus (experimental)**, **TH Servo (preliminary)**, **H100**.
+- **Daemon** (`arborctl-daemon.g`) polling VFDs and filling **object model** globals (`arborVFDStatus`, `arborVFDPower`, etc.). With **NeXT**, polling is via the `data.nxt` daemon hook (catalog plugin).
 - **[Duet Web Control](https://github.com/Duet3D/DuetWebControl) plugin** — one-page editor (the canonical configuration UI), live telemetry, **Test Modbus** probes.
 
 ---
@@ -34,6 +34,7 @@
 | **[doc/dwc-development.md](doc/dwc-development.md)** | Local `npm run dev` with a DWC checkout |
 | **[doc/modbus-manual-experimental.md](doc/modbus-manual-experimental.md)** | Manual Modbus 11-int register map |
 | **[doc/hy02d223b-protocol-notes.md](doc/hy02d223b-protocol-notes.md)** | Huanyang protocol notes |
+| **[doc/h100-notes.md](doc/h100-notes.md)** | H100 Modbus map and panel RS485 setup |
 | **`sys/config.g.example`**, **`sys/daemon.g.example`** | Snippets for your board |
 
 ---
@@ -56,7 +57,7 @@
 
 ## Supported drives
 
-Model list and defaults live in **`sys/arborctl-vars.g`** (`arborAvailableModels`, `arborModelInternalNames`). Current entries include Shihlin, Huanyang, Yalang, Manual Modbus (experimental), and TH Servo (preliminary). Each has **`config.g`**, **`control.g`**, and usually **`settings.g`** under **`macro/private/<internal-name>/`** (installed to **`0:/sys/arborctl/`**).
+Model list and defaults live in **`sys/arborctl-vars.g`** (`arborAvailableModels`, `arborModelInternalNames`). Current entries include Shihlin, Huanyang, Yalang, Manual Modbus (experimental), TH Servo (preliminary), and **H100**. Each has **`config.g`**, **`control.g`**, and usually **`settings.g`** under **`macro/private/<internal-name>/`** (installed to **`0:/sys/arborctl/`**).
 
 ---
 
@@ -64,7 +65,7 @@ Model list and defaults live in **`sys/arborctl-vars.g`** (`arborAvailableModels
 
 The **ArborCTL** panel is the canonical configuration UI. It edits **`arborctl-user-vars.g`**, supports **Manual Modbus** and **TH Servo** UX (e.g. RPM labelling for TH Servo), shows **load / telemetry**, and runs **Test Modbus** without saving. Details: **[doc/dwc-plugin.md](doc/dwc-plugin.md)**.
 
-**Development** (hot reload): copy **`dwc-plugin/`** into a DWC **3.6.x** tree as **`src/plugins/ArborCTL`**, run **`tools/setup-dwc-dev.sh`** (or copy by hand on Windows), then **`npm run dev`**. See **[doc/dwc-development.md](doc/dwc-development.md)**. Local DWC clones (e.g. **`dwc-env/`**) are **gitignored**.
+**Development** (hot reload): copy **`dwc-plugin/`** into a DWC **3.7.x** tree as **`src/plugins/ArborCTL`**, run **`tools/setup-dwc-dev.sh`** (or copy by hand on Windows), then **`npm run dev`**. See **[doc/dwc-development.md](doc/dwc-development.md)**. Local DWC clones (e.g. **`dwc-env/`**) are **gitignored**.
 
 ---
 
@@ -76,7 +77,7 @@ The **ArborCTL** panel is the canonical configuration UI. It edits **`arborctl-u
 
 - Workflow: **[`.github/workflows/release.yml`](.github/workflows/release.yml)**.
 - **Trigger:** push a **git tag** matching **`v*`** (e.g. **`v0.2.0`**).
-- **Action:** clones **DuetWebControl `v3.6.1`**, runs **`npm install`**, runs **[`dist/build-dwc-plugin.sh`](dist/build-dwc-plugin.sh)**, uploads **`dist/ArborCTL-<version>.zip`** to a **published** GitHub Release (not draft) with generated release notes.
+- **Action:** clones **DuetWebControl `v3.7.0-beta.1`**, runs **`npm install`**, runs **[`dist/build-dwc-plugin.sh`](dist/build-dwc-plugin.sh)**, uploads **`dist/ArborCTL-<version>.zip`** to a **published** GitHub Release (not draft) with generated release notes.
 
 **Publish a release:**
 
@@ -89,7 +90,7 @@ Use a **semver** tag. **Pre-releases:** create a pre-release in the GitHub UI af
 
 ### Manual build (maintainers)
 
-Requires a **DuetWebControl** checkout with **`npm install`** (same **3.6.x** line as **`dwc-plugin/plugin.json`** `dwcVersion`). Use Git Bash / WSL on Windows.
+Requires a **DuetWebControl** checkout with **`npm install`** (DWC **3.7.x**; `plugin.json` uses `dwcVersion: "auto"` so the ZIP stamps the exact host version). Node **^20.19 or ≥22.12**. Use Git Bash / WSL on Windows.
 
 ```bash
 cd /path/to/ArborCTL

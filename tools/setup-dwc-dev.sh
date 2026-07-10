@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Link ArborCTL dwc-plugin into a DuetWebControl clone for local hot-reload development.
-# Usage: ./tools/setup-dwc-dev.sh /path/to/DuetWebControl-3.6.1
+# Usage: ./tools/setup-dwc-dev.sh /path/to/DuetWebControl-3.7.x
 set -euo pipefail
 
 DWC_REPO="${1:-}"

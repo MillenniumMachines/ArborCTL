@@ -1,21 +1,21 @@
 <template>
     <v-card class="ma-3">
         <v-card-title class="d-flex align-center">
-            <v-icon class="mr-2">mdi-cog-transfer</v-icon>
+            <v-icon class="mr-2" icon="mdi-cog-transfer" />
             ArborCTL
             <v-spacer />
-            <v-chip small label :color="loaded ? 'success' : 'warning'">
+            <v-chip size="small" label :color="loaded ? 'success' : 'warning'">
                 {{ loaded ? "Loaded" : "Not loaded" }}
             </v-chip>
         </v-card-title>
 
         <v-card-subtitle>
-            RS485 spindle control for RepRapFirmware 3.6+. Edit all parameters on one page, save to
+            RS485 spindle control for RepRapFirmware 3.7+. Edit all parameters on one page, save to
             <code>0:/sys/arborctl-user-vars.g</code>, then reboot or run VFD setup.
         </v-card-subtitle>
 
         <v-card-text>
-            <v-simple-table dense>
+            <v-table density="compact">
                 <tbody>
                     <tr>
                         <th class="text-left" style="width: 220px;">Version</th>
@@ -26,20 +26,20 @@
                         <td>{{ configuredSpindles }}</td>
                     </tr>
                 </tbody>
-            </v-simple-table>
+            </v-table>
 
             <template v-if="loaded">
                 <v-divider class="my-4" />
                 <div class="text-subtitle-1 mb-1 d-flex align-center flex-wrap">
-                    <v-icon class="mr-2" small>mdi-gauge</v-icon>
+                    <v-icon class="mr-2" size="small" icon="mdi-gauge" />
                     Spindle load &amp; telemetry
                 </div>
-                <p class="caption grey--text text--darken-1 mb-2">
+                <p class="text-caption text-medium-emphasis mb-2">
                     From <code>arborVFDStatus</code> / <code>arborVFDPower</code> (daemon polling). Load % is
                     driver-defined (e.g. VFD power estimate, servo register, or 0). Feed protect when load &gt;
                     <b>{{ arborMaxLoadDisplay }}%</b> (<code>global.arborMaxLoad</code>).
                 </p>
-                <v-simple-table v-if="telemetryRows.length > 0" dense>
+                <v-table v-if="telemetryRows.length > 0" density="compact">
                     <thead>
                         <tr>
                             <th class="text-left">Spindle</th>
@@ -59,7 +59,7 @@
                             <td>{{ row.id }}</td>
                             <td>{{ row.driveName }}</td>
                             <td>
-                                <v-chip x-small label :color="row.commColor">{{ row.commLabel }}</v-chip>
+                                <v-chip size="x-small" label :color="row.commColor">{{ row.commLabel }}</v-chip>
                             </td>
                             <td>{{ row.running }}</td>
                             <td>{{ row.dir }}</td>
@@ -72,7 +72,7 @@
                                     <span class="mr-2">{{ row.loadPct }}</span>
                                     <v-progress-linear
                                         v-if="row.loadBar >= 0"
-                                        :value="row.loadBar"
+                                        :model-value="row.loadBar"
                                         height="8"
                                         color="primary"
                                         class="flex-grow-1"
@@ -82,18 +82,18 @@
                             </td>
                         </tr>
                     </tbody>
-                </v-simple-table>
-                <v-alert v-else type="info" dense outlined class="mb-0">
+                </v-table>
+                <v-alert v-else type="info" density="compact" variant="outlined" class="mb-0">
                     No ArborCTL-configured spindles yet, or telemetry not available. Save a configuration and ensure the
                     arborctl daemon is running.
                 </v-alert>
             </template>
 
-            <v-alert v-if="!loaded" class="mt-4" type="warning" outlined dense>
+            <v-alert v-if="!loaded" class="mt-4" type="warning" variant="outlined" density="compact">
                 ArborCTL has not loaded. Ensure <code>M98 P"arborctl.g"</code> is at the end of <code>config.g</code> and reset the board.
             </v-alert>
 
-            <v-alert v-if="!hasConfiguredSpindle" class="mt-4" type="warning" outlined dense>
+            <v-alert v-if="!hasConfiguredSpindle" class="mt-4" type="warning" variant="outlined" density="compact">
                 No RRF spindle is configured. Define a spindle with <code>M950 R...</code> in <code>config.g</code> before binding it to a VFD here.
             </v-alert>
 
@@ -105,9 +105,11 @@
                     <v-select
                         v-model="form.channel"
                         :items="channelItems"
+                        item-title="text"
+                        item-value="value"
                         label="UART port"
-                        dense
-                        outlined
+                        density="compact"
+                        variant="outlined"
                         hide-details="auto"
                     />
                 </v-col>
@@ -116,8 +118,8 @@
                         v-model="form.baud"
                         :items="baudItems"
                         label="Baud rate"
-                        dense
-                        outlined
+                        density="compact"
+                        variant="outlined"
                         hide-details="auto"
                     />
                 </v-col>
@@ -128,8 +130,8 @@
                         label="Modbus / RS485 address"
                         min="1"
                         max="247"
-                        dense
-                        outlined
+                        density="compact"
+                        variant="outlined"
                         hide-details="auto"
                     />
                 </v-col>
@@ -137,24 +139,24 @@
                     <v-select
                         v-model="form.typeIndex"
                         :items="modelItems"
-                        item-text="text"
+                        item-title="text"
                         item-value="value"
                         label="VFD model"
-                        dense
-                        outlined
+                        density="compact"
+                        variant="outlined"
                         hide-details="auto"
-                        @change="onModelChange"
+                        @update:model-value="onModelChange"
                     />
                 </v-col>
                 <v-col cols="12" sm="6" md="6">
                     <v-select
                         v-model="form.spindleId"
                         :items="spindleSelectItems"
-                        item-text="text"
+                        item-title="text"
                         item-value="value"
                         label="RRF spindle"
-                        dense
-                        outlined
+                        density="compact"
+                        variant="outlined"
                         hide-details="auto"
                     />
                 </v-col>
@@ -168,8 +170,8 @@
                         type="number"
                         label="Power (kW)"
                         step="0.01"
-                        dense
-                        outlined
+                        density="compact"
+                        variant="outlined"
                         hide-details="auto"
                     />
                 </v-col>
@@ -178,8 +180,8 @@
                         v-model.number="form.motorPoles"
                         :items="poleItems"
                         label="Poles"
-                        dense
-                        outlined
+                        density="compact"
+                        variant="outlined"
                         hide-details="auto"
                     />
                 </v-col>
@@ -188,8 +190,8 @@
                         v-model.number="form.motorV"
                         type="number"
                         label="Voltage (V)"
-                        dense
-                        outlined
+                        density="compact"
+                        variant="outlined"
                         hide-details="auto"
                     />
                 </v-col>
@@ -198,8 +200,8 @@
                         v-model.number="form.motorF"
                         type="number"
                         :label="motorFreqLabel"
-                        dense
-                        outlined
+                        density="compact"
+                        variant="outlined"
                         hide-details="auto"
                     />
                 </v-col>
@@ -209,8 +211,8 @@
                         type="number"
                         label="Current (A)"
                         step="0.1"
-                        dense
-                        outlined
+                        density="compact"
+                        variant="outlined"
                         hide-details="auto"
                     />
                 </v-col>
@@ -219,8 +221,8 @@
                         v-model.number="form.motorR"
                         type="number"
                         label="Rated speed (RPM)"
-                        dense
-                        outlined
+                        density="compact"
+                        variant="outlined"
                         hide-details="auto"
                     />
                 </v-col>
@@ -228,30 +230,30 @@
 
             <v-row v-if="isThServo" dense class="mt-1">
                 <v-col cols="12">
-                    <v-chip small class="mr-2" outlined>
+                    <v-chip size="small" class="mr-2" variant="outlined">
                         Min RPM (RRF spindle vs rated): {{ spindleRpmLimits.t }}
                     </v-chip>
-                    <v-chip small outlined>
+                    <v-chip size="small" variant="outlined">
                         Max RPM (RRF spindle vs rated): {{ spindleRpmLimits.e }}
                     </v-chip>
                 </v-col>
             </v-row>
             <v-row v-else dense class="mt-1">
                 <v-col cols="12">
-                    <v-chip small class="mr-2" outlined>
+                    <v-chip size="small" class="mr-2" variant="outlined">
                         Min Hz (from RRF spindle limits): {{ hzLimits.t }}
                     </v-chip>
-                    <v-chip small outlined>
+                    <v-chip size="small" variant="outlined">
                         Max Hz (from RRF spindle limits): {{ hzLimits.e }}
                     </v-chip>
                 </v-col>
             </v-row>
-            <p v-if="isThServo" class="caption grey--text text--darken-1 mt-2 mb-0">
+            <p v-if="isThServo" class="text-caption text-medium-emphasis mt-2 mb-0">
                 TH Servo runs in <b>RPM</b>: the driver uses RRF spindle <b>min</b>/<b>max</b> (RPM) and nameplate rated RPM.
                 <b>Frequency (Hz)</b> below is still saved into <code>arborWizardFreqLimits</code> for compatibility; the TH driver does not use Hz for speed.
                 Baud is not on the object model — set it here to match <b>M575</b>.
             </p>
-            <p v-else class="caption grey--text text--darken-1 mt-2 mb-0">
+            <p v-else class="text-caption text-medium-emphasis mt-2 mb-0">
                 Hz limits are derived from the RRF spindle min/max and capped by motor rated frequency. Baud is not
                 exposed on the object model; set it here to match <b>M575</b> in your user vars file.
             </p>
@@ -260,46 +262,46 @@
                 <v-divider class="my-4" />
                 <div class="text-subtitle-1 mb-2">
                     Manual Modbus map
-                    <v-chip x-small class="ml-2" color="amber" text-color="black" label>experimental</v-chip>
+                    <v-chip size="x-small" class="ml-2" color="amber" label>experimental</v-chip>
                 </div>
-                <p class="caption mb-2">
+                <p class="text-caption mb-2">
                     Eleven holding-register integers (FC3 / FC6). See
                     <a href="https://github.com/MillenniumMachines/ArborCTL/blob/main/doc/modbus-manual-experimental.md" target="_blank" rel="noopener">modbus-manual-experimental.md</a>
                     (or <code>doc/modbus-manual-experimental.md</code> in the repo).
                 </p>
                 <v-row dense>
                     <v-col cols="6" sm="4" md="3">
-                        <v-text-field v-model.number="form.manualSpec[0]" type="number" label="Freq write reg" dense outlined hide-details="auto" />
+                        <v-text-field v-model.number="form.manualSpec[0]" type="number" label="Freq write reg" density="compact" variant="outlined" hide-details="auto" />
                     </v-col>
                     <v-col cols="6" sm="4" md="3">
-                        <v-text-field v-model.number="form.manualSpec[1]" type="number" label="Cmd reg" dense outlined hide-details="auto" />
+                        <v-text-field v-model.number="form.manualSpec[1]" type="number" label="Cmd reg" density="compact" variant="outlined" hide-details="auto" />
                     </v-col>
                     <v-col cols="6" sm="4" md="3">
-                        <v-text-field v-model.number="form.manualSpec[2]" type="number" label="Freq read reg (0=none)" dense outlined hide-details="auto" />
+                        <v-text-field v-model.number="form.manualSpec[2]" type="number" label="Freq read reg (0=none)" density="compact" variant="outlined" hide-details="auto" />
                     </v-col>
                     <v-col cols="6" sm="4" md="3">
-                        <v-text-field v-model.number="form.manualSpec[10]" type="number" label="Probe reg (-1=skip)" dense outlined hide-details="auto" />
+                        <v-text-field v-model.number="form.manualSpec[10]" type="number" label="Probe reg (-1=skip)" density="compact" variant="outlined" hide-details="auto" />
                     </v-col>
                     <v-col cols="4" sm="3" md="2">
-                        <v-text-field v-model.number="form.manualSpec[3]" type="number" label="Run fwd value" dense outlined hide-details="auto" />
+                        <v-text-field v-model.number="form.manualSpec[3]" type="number" label="Run fwd value" density="compact" variant="outlined" hide-details="auto" />
                     </v-col>
                     <v-col cols="4" sm="3" md="2">
-                        <v-text-field v-model.number="form.manualSpec[4]" type="number" label="Run rev value" dense outlined hide-details="auto" />
+                        <v-text-field v-model.number="form.manualSpec[4]" type="number" label="Run rev value" density="compact" variant="outlined" hide-details="auto" />
                     </v-col>
                     <v-col cols="4" sm="3" md="2">
-                        <v-text-field v-model.number="form.manualSpec[5]" type="number" label="Stop value" dense outlined hide-details="auto" />
+                        <v-text-field v-model.number="form.manualSpec[5]" type="number" label="Stop value" density="compact" variant="outlined" hide-details="auto" />
                     </v-col>
                     <v-col cols="6" sm="4" md="3">
-                        <v-text-field v-model.number="form.manualSpec[6]" type="number" label="Write scale num" dense outlined hide-details="auto" />
+                        <v-text-field v-model.number="form.manualSpec[6]" type="number" label="Write scale num" density="compact" variant="outlined" hide-details="auto" />
                     </v-col>
                     <v-col cols="6" sm="4" md="3">
-                        <v-text-field v-model.number="form.manualSpec[7]" type="number" label="Write scale den" dense outlined hide-details="auto" />
+                        <v-text-field v-model.number="form.manualSpec[7]" type="number" label="Write scale den" density="compact" variant="outlined" hide-details="auto" />
                     </v-col>
                     <v-col cols="6" sm="4" md="3">
-                        <v-text-field v-model.number="form.manualSpec[8]" type="number" label="Read scale num" dense outlined hide-details="auto" />
+                        <v-text-field v-model.number="form.manualSpec[8]" type="number" label="Read scale num" density="compact" variant="outlined" hide-details="auto" />
                     </v-col>
                     <v-col cols="6" sm="4" md="3">
-                        <v-text-field v-model.number="form.manualSpec[9]" type="number" label="Read scale den" dense outlined hide-details="auto" />
+                        <v-text-field v-model.number="form.manualSpec[9]" type="number" label="Read scale den" density="compact" variant="outlined" hide-details="auto" />
                     </v-col>
                 </v-row>
             </template>
@@ -308,42 +310,42 @@
 
             <div class="d-flex flex-wrap align-center">
                 <v-btn color="primary" class="mr-2 mb-2" :disabled="uiFrozen || !canSave" :loading="saving" @click="saveUserVars">
-                    <v-icon left small>mdi-content-save</v-icon>
+                    <v-icon start size="small" icon="mdi-content-save" />
                     Save to arborctl-user-vars.g
                 </v-btn>
                 <v-btn color="secondary" class="mr-2 mb-2" :disabled="uiFrozen || !canSave" :loading="configuring" @click="saveAndConfigureVfd">
-                    <v-icon left small>mdi-serial-port</v-icon>
+                    <v-icon start size="small" icon="mdi-serial-port" />
                     Save &amp; run VFD config macro
                 </v-btn>
                 <v-btn
                     class="mr-2 mb-2"
-                    outlined
+                    variant="outlined"
                     color="deep-orange"
                     :disabled="uiFrozen || !canProbeModbus"
                     :loading="testProbing"
                     @click="testModbusProbe"
                 >
-                    <v-icon left small>mdi-network-outline</v-icon>
+                    <v-icon start size="small" icon="mdi-network-outline" />
                     Test Modbus
                 </v-btn>
-                <v-btn class="mb-2" color="secondary" text href="https://github.com/MillenniumMachines/ArborCTL" target="_blank" rel="noopener">
-                    <v-icon left small>mdi-github</v-icon>
+                <v-btn class="mb-2" color="secondary" variant="text" href="https://github.com/MillenniumMachines/ArborCTL" target="_blank" rel="noopener">
+                    <v-icon start size="small" icon="mdi-github" />
                     Documentation
                 </v-btn>
             </div>
-            <p class="caption grey--text text--darken-1 mt-1 mb-0">{{ probeModbusCaption }}</p>
-            <v-alert v-if="saveError" type="error" dense outlined class="mt-2">{{ saveError }}</v-alert>
+            <p class="text-caption text-medium-emphasis mt-1 mb-0">{{ probeModbusCaption }}</p>
+            <v-alert v-if="saveError" type="error" density="compact" variant="outlined" class="mt-2">{{ saveError }}</v-alert>
         </v-card-text>
     </v-card>
 </template>
 
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 
-import store from "@/store";
+import store from "./compat/dwcStore";
 
 function getGlobal(key: string): any {
-    const model = (store.state as any)?.machine?.model;
+    const model = store.state?.machine?.model as any;
     if (!model || !model.global) return undefined;
     if (model.global instanceof Map) {
         return model.global.get(key);
@@ -411,13 +413,19 @@ const BAUD_LIST = [4800, 9600, 19200, 38400, 57600];
 /** Index of "Manual Modbus (experimental)" in arborAvailableModels / arborModelInternalNames */
 const MANUAL_MODBUS_INDEX = 3;
 
-/** Index of "TH Servo (preliminary)" — driver from PR #17 (jayem1427/feature/th-servo-support) */
+/** Index of "TH Servo (preliminary)" */
 const TH_SERVO_INDEX = 4;
+
+/** Index of "H100" */
+const H100_INDEX = 5;
 
 const DEFAULT_MANUAL_SPEC = [5000, 5001, 5002, 1, 2, 0, 1, 1, 1, 100, 5000];
 
-export default Vue.extend({
+export default defineComponent({
     name: "ArborCTL",
+    beforeCreate() {
+        Object.defineProperty(this, "$store", { get: () => store, configurable: true });
+    },
     data() {
         return {
             saving: false,
@@ -442,7 +450,7 @@ export default Vue.extend({
     },
     computed: {
         uiFrozen(): boolean {
-            return store.getters["uiFrozen"];
+            return store.state.machine.model.state.status === "processing";
         },
         loaded(): boolean {
             return Boolean(getGlobal("arborctlLdd"));
@@ -540,7 +548,8 @@ export default Vue.extend({
                     { text: "Huanyang HY02D223", value: 1 },
                     { text: "Yalang YL620-A", value: 2 },
                     { text: "Manual Modbus (experimental)", value: MANUAL_MODBUS_INDEX },
-                    { text: "TH Servo (preliminary)", value: TH_SERVO_INDEX }
+                    { text: "TH Servo (preliminary)", value: TH_SERVO_INDEX },
+                    { text: "H100", value: H100_INDEX }
                 ];
             }
             return m.map((text: string, i: number) => ({ text, value: i }));
@@ -554,9 +563,8 @@ export default Vue.extend({
         motorFreqLabel(): string {
             return this.isThServo ? "Frequency (Hz, legacy file field)" : "Frequency (Hz)";
         },
-        /** RRF spindle min/max RPM as used by th-servo/control.g (rated RPM caps max). */
         spindleRpmLimits(): { t: number; e: number } {
-            const model = (store.state as any)?.machine?.model;
+            const model = store.state.machine.model as any;
             const spindles = model?.spindles;
             const sid = this.form.spindleId;
             const ratedR = Number(this.form.motorR);
@@ -602,7 +610,7 @@ export default Vue.extend({
             return true;
         },
         spindleSelectItems(): Array<{ text: string; value: number }> {
-            const model = (store.state as any)?.machine?.model;
+            const model = store.state.machine.model as any;
             const spindles = model?.spindles;
             const maxS = model?.limits?.spindles ?? 8;
             const items: Array<{ text: string; value: number }> = [];
@@ -618,7 +626,7 @@ export default Vue.extend({
             return this.spindleSelectItems.length > 0;
         },
         hzLimits(): { t: number; e: number } {
-            const model = (store.state as any)?.machine?.model;
+            const model = store.state.machine.model as any;
             const spindles = model?.spindles;
             const sid = this.form.spindleId;
             const poles = this.form.motorPoles;
@@ -648,7 +656,8 @@ export default Vue.extend({
                 "huanyang-hy02d223b",
                 "yalang-yl620a",
                 "modbus-manual-experimental",
-                "th-servo"
+                "th-servo",
+                "h100"
             ];
             return fallback[this.form.typeIndex] || "huanyang-hy02d223b";
         },
@@ -702,6 +711,9 @@ export default Vue.extend({
             }
             if (int === "yalang-yl620a") {
                 return 0x0d01;
+            }
+            if (int === "h100") {
+                return 0x0005;
             }
             return 5000;
         },
@@ -835,15 +847,11 @@ export default Vue.extend({
                 const f = this.form;
                 const hz = this.hzLimits;
                 const internal = this.internalName;
-                // Reload user vars so globals (e.g. arborModbusManualSpec) match the file we just uploaded
-                // before config.g reads them — especially for Manual Modbus (experimental).
-                await store.dispatch("machine/sendCode", {
-                    code: 'M98 P"0:/sys/arborctl-user-vars.g"'
-                });
+                await store.dispatch("machine/sendCode", 'M98 P"0:/sys/arborctl-user-vars.g"');
                 const code =
                     `M98 P"arborctl/${internal}/config.g" B${f.baud} C${f.channel} A${f.address} S${f.spindleId} ` +
                     `W${f.motorW} U${f.motorPoles} V${f.motorV} F${f.motorF} I${f.motorI} R${f.motorR} T${hz.t} E${hz.e}`;
-                await store.dispatch("machine/sendCode", { code });
+                await store.dispatch("machine/sendCode", code);
             } catch (e) {
                 this.saveError = e instanceof Error ? e.message : String(e);
                 console.error("[ArborCTL] VFD config failed", e);
@@ -862,9 +870,10 @@ export default Vue.extend({
                     return;
                 }
                 if (int === "huanyang-hy02d223b") {
-                    await store.dispatch("machine/sendCode", {
-                        code: `M98 P"arborctl/huanyang-quick-probe.g" B${f.baud} C${f.channel} A${f.address}`
-                    });
+                    await store.dispatch(
+                        "machine/sendCode",
+                        `M98 P"arborctl/huanyang-quick-probe.g" B${f.baud} C${f.channel} A${f.address}`
+                    );
                     return;
                 }
                 const r = this.probeRegisterForQuickTest;
@@ -873,9 +882,10 @@ export default Vue.extend({
                         "Set a valid FC3 register (Manual: probe reg ≥ 0, or use freq-write reg when probe is skipped).";
                     return;
                 }
-                await store.dispatch("machine/sendCode", {
-                    code: `M98 P"arborctl/modbus-fc3-probe.g" B${f.baud} C${f.channel} A${f.address} R${r}`
-                });
+                await store.dispatch(
+                    "machine/sendCode",
+                    `M98 P"arborctl/modbus-fc3-probe.g" B${f.baud} C${f.channel} A${f.address} R${r}`
+                );
             } catch (e) {
                 this.saveError = e instanceof Error ? e.message : String(e);
                 console.error("[ArborCTL] Test Modbus failed", e);
