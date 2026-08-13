@@ -17,6 +17,13 @@ if { !exists(param.C) }
 if { !exists(param.S) }
     abort { "ArborCtl: Manual Modbus - No spindle specified!" }
 
+if { exists(param.U) && exists(param.F) && exists(param.R) }
+    M98 P"arborctl/check-motor-nameplate.g" U{param.U} F{param.F} R{param.R}
+
+; Pause daemon polling while config / probe runs.
+if { exists(global.arborVFDCommReady) }
+    set global.arborVFDCommReady[param.S] = false
+
 M575 P{param.C} B{param.B} S7
 
 if { !exists(global.arborModbusManualSpec) || global.arborModbusManualSpec[param.S] == null }
@@ -30,14 +37,11 @@ var m = { global.arborModbusManualSpec[param.S] }
 var rProbe = { var.m[10] }
 
 if { var.rProbe >= 0 }
-    M98 P"arborctl/delay-for-command.g"
-    M2601 E0 P{param.C} A{param.A} F3 R{var.rProbe} B1
-    if { global.arborRetVal == null }
+    M98 P"arborctl/uart-channel-probe.g" B{param.B} C{param.C} A{param.A} R{var.rProbe} S{param.S} W{250}
+    if { global.arborProbeChannel == null || global.arborRetVal == null }
         echo { "ArborCtl: Manual Modbus (experimental) - probe read failed on register " ^ var.rProbe }
-        if { exists(global.arborVFDCommReady) }
-            set global.arborVFDCommReady[param.S] = false
         M99
-    echo { "ArborCtl: Manual Modbus (experimental) - probe OK on register " ^ var.rProbe }
+    echo { "ArborCtl: Manual Modbus (experimental) - probe OK on register " ^ var.rProbe ^ " channel P" ^ global.arborProbeChannel }
 
 if { exists(global.arborVFDCommReady) }
     set global.arborVFDCommReady[param.S] = true

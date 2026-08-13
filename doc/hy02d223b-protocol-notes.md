@@ -67,6 +67,8 @@ The HY02D223B folder now mirrors the per-model structure already used by the Shi
 - `PD144` rated RPM at `50 Hz`
 - `PD005` maximum operating frequency
 - `PD011` lower frequency limit
+- `PD014` acceleration time (0.1 s units, from wizard `J`)
+- `PD015` deceleration time (0.1 s units, from wizard `K`)
 - `PD023` reverse rotation enable
 - `PD001` run commands from communication
 - `PD002` frequency source from communication

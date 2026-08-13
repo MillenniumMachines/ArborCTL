@@ -3,3 +3,11 @@
 # Local DuetWebControl clone used for `npm run dev` (see doc/dwc-development.md)
 dwc-env/
 
+# Built plugin ZIPs (from dist/build-dwc-plugin.sh / release)
+dist/*.zip
+
+# Local Cursor IDE / agent config (not product)
+.cursor/
+
+# Local scratch notes
+Unofficial guide to setting up H100 VFDs with RS485 on the SLB.txt

@@ -60,22 +60,24 @@ if { !exists(param.I) }
 if { !exists(param.R) }
     abort { "ArborCtl: H100 - No motor rotation speed specified!" }
 
+M98 P"arborctl/check-motor-nameplate.g" U{param.U} F{param.F} R{param.R}
+
 M98 P"arborctl/h100/settings.g"
 
-; Configure serial port with the selected baud rate
-M575 P{param.C} B{param.B} S7
+; Pause daemon polling while config / probe runs.
+if { exists(global.arborVFDCommReady) }
+    set global.arborVFDCommReady[param.S] = false
 
+var waitTime = 250
 var vfdResponding = { false }
 
 while { !var.vfdResponding }
-    ; Probe F005 (max frequency) via FC3 — same register FluidNC uses for get_max_rpm
-    M2601 E0 P{param.C} A{param.A} F3 R{global.h100MaxFreqAddr} B1
+    ; Probe F005 (max frequency) via FC3 — channel fallback C,2,3,1
+    M98 P"arborctl/uart-channel-probe.g" B{param.B} C{param.C} A{param.A} R{global.h100MaxFreqAddr} S{param.S} W{var.waitTime}
     var maxFreqRaw = { global.arborRetVal }
 
-    if { var.maxFreqRaw != null && #var.maxFreqRaw == 1 }
+    if { global.arborProbeChannel != null && var.maxFreqRaw != null && #var.maxFreqRaw == 1 }
         set var.vfdResponding = { true }
-        if { exists(global.arborVFDCommReady) }
-            set global.arborVFDCommReady[param.S] = true
     else
         M291 P"Unable to communicate with H100 VFD. Configure RS485 on the panel first.<br/><br/>Show setup guidance?" R"ArborCtl: H100 Setup" S4 T0 K{"Yes, guide me", "No, skip and retry"} F0 J2
         if { result == -1 }
@@ -115,6 +117,9 @@ set global.arborWizardFreqLimits[param.S] = { param.T, param.E }
 ; Clear cached VFD state so control.g reloads limits
 set global.arborState[param.S][0] = null
 set global.arborState[param.S][3] = null
+
+if { exists(global.arborVFDCommReady) }
+    set global.arborVFDCommReady[param.S] = true
 
 echo { "ArborCtl: H100 - Probe OK. Motor " ^ param.W ^ "kW, poles=" ^ param.U ^ ", Hz " ^ param.T ^ "-" ^ param.E }
 M291 P{"H100 communication <b>OK</b>.<br/>Wizard motor and Hz limits saved. Ensure F001/F002=2 and F163–F165 match this UART."} R"ArborCtl: H100" S0 T5

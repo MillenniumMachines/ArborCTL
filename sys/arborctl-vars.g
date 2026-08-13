@@ -9,6 +9,9 @@ global arborModelDefaultBaudRateIndex = { 1, 1, 2, 1, 2, 1 }
 ; Return value for last M2600 or M2601 command
 global arborRetVal = { null }
 
+; Last successful UART device from uart-channel-probe.g (null = probe failed)
+global arborProbeChannel = null
+
 ; Maximum load percentage before triggering overload condition 
 global arborMaxLoad = 80
 
@@ -42,6 +45,10 @@ global arborMotorSpec = { vector(limits.spindles, null) }
 ; reads (function 0x01) are not supported by the VFD clone.
 global arborWizardFreqLimits = { vector(limits.spindles, null) }
 
+; Wizard accel/decel seconds {accel, decel}. Written to VFD ramp PDs on Apply
+; (Huanyang PD014/PD015, Shihlin/Yalang acc/dec). Omit unset keys in user-vars.
+global arborWizardRamp = { vector(limits.spindles, null) }
+
 ; Manual Modbus (experimental): per-spindle register map (11 integers). See
 ; doc/modbus-manual-experimental.md. Null until configured (DWC or user vars).
 global arborModbusManualSpec = { vector(limits.spindles, null) }
@@ -64,3 +71,8 @@ global arborVFDPower = { vector(limits.spindles, null) }
 ; The Huanyang driver uses M260.4 which throws unrecoverable errors on
 ; timeout, so the daemon must not call it until this flag is set.
 global arborVFDCommReady = { vector(limits.spindles, false) }
+
+; Runtime daemon gate. false pauses polling so DSF can replace numbered
+; sys metas (M2604.g etc.) during plugin update. Do not persist false
+; in arborctl-user-vars.g — reboot restores true from this default.
+global arborctlDaemonEnabled = true

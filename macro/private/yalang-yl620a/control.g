@@ -10,6 +10,8 @@ if { !exists(param.C) }
 if { !exists(param.S) }
     abort { "ArborCtl: No spindle specified!" }
 
+M98 P"arborctl/delay-for-command.g" S250
+
 var motorLimitsAddr = 0x0c00
 var maximumFrequencyAddr = 0x0005
 var minimumFrequencyAddr = 0x0009
@@ -154,12 +156,15 @@ elif { var.shouldRun }
     var maxFreq    = { global.arborState[param.S][3][0] }
     var minFreq    = { global.arborState[param.S][3][1] }
 
-    ; RPM = 120 x f / poles.
-    ; f = RPM x poles / 120
-    var newFreq = { ceil(min(var.maxFreq, max(var.minFreq, (abs(spindles[param.S].current) * var.numPoles) / 120))) * 10 }
+    ; f = |RPM| * poles / 120 ; store as deci-Hz
+    var cmdRpm = { abs(spindles[param.S].active) }
+    var targetHz = { min(var.maxFreq, max(var.minFreq, (var.cmdRpm * var.numPoles) / 120)) }
+    var newFreq = { ceil(var.targetHz) * 10 }
 
     ; Set input frequency if it doesn't match the RRF value
     if { var.vfdInputFreq != var.newFreq }
+        echo { "ArborCtl: Setting spindle " ^ param.S ^ " to " ^ var.targetHz ^ " Hz" }
+        echo { "ArborCtl: poles=" ^ var.numPoles ^ " cmdRPM=" ^ var.cmdRpm }
         M2600 E0 P{param.C} A{param.A} F6 R{var.setFrequencyAddr} B{var.newFreq,}
         set var.commandChange = true
 
@@ -173,9 +178,9 @@ elif { var.shouldRun }
         M2600 E0 P{param.C} A{param.A} F6 R{var.setCommandAddr} B{0x0022,}
         set var.commandChange = true
 
-; Calculate current RPM from output frequency
-var currentFrequency = { var.vfdOutputFreq * 0.1 } ; Convert to Hz
-var currentRPM       = { var.currentFrequency * 60 / (global.arborState[param.S][0][2] / 2) }
+; RPM = 120 * f / poles
+var currentFrequency = { var.vfdOutputFreq * 0.1 }
+var currentRPM       = { var.currentFrequency * 120 / global.arborState[param.S][0][2] }
 var isStable         = { var.vfdRunning && var.vfdSpeedReached }
 
 ; Save previous stability flag for stability change detection

@@ -14,6 +14,8 @@
 ; F - Motor rated frequency (Hz)
 ; I - Motor rated current (A)
 ; R - Motor rated rotation speed (RPM)
+; J - Acceleration time (seconds)
+; K - Deceleration time (seconds)
 ; D - Reset to factory defaults (1) or not (0) - not currently implemented for HY02D223B
 
 if { !exists(param.A) }
@@ -61,6 +63,14 @@ if { !exists(param.I) }
 if { !exists(param.R) || param.R <= 0 }
     abort { "ArborCtl: Huanyang HY02D223B - No valid motor rotation speed specified!" }
 
+M98 P"arborctl/check-motor-nameplate.g" U{param.U} F{param.F} R{param.R}
+
+if { !exists(param.J) || param.J <= 0 }
+    abort { "ArborCtl: Huanyang HY02D223B - Accel time (J) must be positive!" }
+
+if { !exists(param.K) || param.K <= 0 }
+    abort { "ArborCtl: Huanyang HY02D223B - Decel time (K) must be positive!" }
+
 var baudRateValue = { param.B == 4800 ? 0 : param.B == 9600 ? 1 : param.B == 19200 ? 2 : param.B == 38400 ? 3 : -1 }
 if { var.baudRateValue == -1 }
     abort { "ArborCtl: Huanyang HY02D223B - Invalid baud rate specified. Supported baud rates are 4800, 9600, 19200, and 38400." }
@@ -74,7 +84,7 @@ if { exists(param.D) && param.D == 1 }
     echo { "ArborCtl: Huanyang HY02D223B - Factory reset over RS485 is not implemented. Continuing without reset." }
 
 ; Load the settings file which will define global.hy02d223bConfigParams
-M98 P"arborctl/huanyang-hy02d223b/settings.g" A{param.A} B{param.B} W{param.W} U{param.U} V{param.V} F{param.F} I{param.I} R{param.R} T{param.T} E{param.E}
+M98 P"arborctl/huanyang-hy02d223b/settings.g" A{param.A} B{param.B} W{param.W} U{param.U} V{param.V} F{param.F} I{param.I} R{param.R} T{param.T} E{param.E} J{param.J} K{param.K}
 
 var waitTime = 250
 
@@ -90,12 +100,12 @@ var commChannel = { param.C }
 var vfdCommReady = null
 
 while { var.vfdCommReady == null }
-    ; Try selected channel first, then fallback channels. This avoids
-    ; lockout if the selected AUX port index doesn't match the board mapping.
-    var channelCandidates = { vector(3, 0) }
+    ; Try selected channel first, then P2, P3, P1 (RRF 3.7 UARTs before USB).
+    var channelCandidates = { vector(4, 0) }
     set var.channelCandidates[0] = var.commChannel
-    set var.channelCandidates[1] = 1
-    set var.channelCandidates[2] = 2
+    set var.channelCandidates[1] = 2
+    set var.channelCandidates[2] = 3
+    set var.channelCandidates[3] = 1
 
     var probeSuccess = false
     var probeIdx = 0
@@ -106,6 +116,7 @@ while { var.vfdCommReady == null }
             continue
 
         M575 P{var.tryChannel} B{param.B} S7
+        M98 P"arborctl/delay-for-command.g" S{var.waitTime}
         ; Huanyang function 0x04 = read control/status (set frequency register).
         ; Some VFDs respond here while function 0x01 (PD parameter read) does not
         ; during initial probe — same frame as runtime polling in control.g.
@@ -127,7 +138,10 @@ while { var.vfdCommReady == null }
             if { fileexists("0:/sys/arborctl-user-vars.g") && var.commChannel != param.C }
                 echo >>"arborctl-user-vars.g" ""
                 echo >>"arborctl-user-vars.g" "; ArborCtl auto-corrected UART channel after successful Huanyang probe"
-                echo >>"arborctl-user-vars.g" {"set global.arborVFDConfig[" ^ param.S ^ "] = {" ^ global.arborVFDConfig[param.S][0] ^ ", " ^ var.commChannel ^ ", " ^ param.A ^ "} ; Auto-corrected channel"}
+                var hyCfgLine = { "set global.arborVFDConfig[" ^ param.S ^ "] = {" }
+                set var.hyCfgLine = { var.hyCfgLine ^ global.arborVFDConfig[param.S][0] ^ ", " ^ var.commChannel }
+                set var.hyCfgLine = { var.hyCfgLine ^ ", " ^ param.A ^ "} ; Auto-corrected channel" }
+                echo >>"arborctl-user-vars.g" { var.hyCfgLine }
                 echo { "ArborCtl: Huanyang HY02D223B - Auto-corrected UART channel to P" ^ var.commChannel }
     else
         var hyTitle = "ArborCtl: Huanyang HY02D223B Setup"

@@ -4,5 +4,8 @@
 ; Periodic spindle polling. Called from nxt-plugin-daemon-dispatch.g when
 ; ArborCTL is registered in the NeXT plugin catalog.
 
+if { exists(global.arborctlDaemonEnabled) && !global.arborctlDaemonEnabled }
+    M99
+
 if { fileexists("0:/sys/arborctl/arborctl-daemon.g") }
     M98 P"arborctl/arborctl-daemon.g"

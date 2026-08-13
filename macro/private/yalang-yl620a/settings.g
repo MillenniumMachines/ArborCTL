@@ -42,7 +42,15 @@ set global.yl620aConfigParams[6] = { {0x0304, { 2000, } } }
 set global.yl620aConfigParams[7] = { {0x0708, { 5, } } }
 
 ; ========== OPERATION SETTINGS ==========
-; P20 02 - Acceleration time: 2.5s
-; P20 03 - Acceleration time: 2.5s
-set global.yl620aConfigParams[8] = { {0x2002, { 250, 250 }} }
+; P20 02 - Acceleration time (0.01 s units)
+; P20 03 - Deceleration time (0.01 s units)
+var ylAccelSec = 2.5
+var ylDecelSec = 2.5
+if { exists(param.J) && param.J > 0 }
+    set var.ylAccelSec = { param.J }
+if { exists(param.K) && param.K > 0 }
+    set var.ylDecelSec = { param.K }
+var ylAccel = { ceil(var.ylAccelSec * 100) }
+var ylDecel = { ceil(var.ylDecelSec * 100) }
+set global.yl620aConfigParams[8] = { {0x2002, { var.ylAccel, var.ylDecel }} }
 

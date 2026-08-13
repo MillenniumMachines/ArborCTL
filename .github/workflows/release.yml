@@ -1,5 +1,5 @@
-# Publish a GitHub Release with the DWC plugin ZIP only (ArborCTL-<version>.zip).
-# Trigger: push a tag matching v* (e.g. v0.2.0).
+# Publish a GitHub Release with the DWC plugin ZIP only (ArborCTL-<semver>.zip).
+# Trigger: push a release tag (vMAJOR.MINOR.PATCH, -beta.N, or -rcN).
 
 on:
   push:
@@ -17,6 +17,23 @@ jobs:
     steps:
       - name: Checkout ArborCTL
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify semver release tag
+        run: |
+          chmod +x dist/verify-release-tag.sh
+          dist/verify-release-tag.sh "${GITHUB_REF_NAME}"
+
+      - name: Resolve release version
+        run: |
+          set -euo pipefail
+          # shellcheck source=dist/resolve-build-version.sh
+          . dist/resolve-build-version.sh
+          echo "BUILD_REF=${BUILD_REF}" >> "${GITHUB_ENV}"
+          echo "BUILD_VERSION=${BUILD_VERSION}" >> "${GITHUB_ENV}"
+          echo "PLUGIN_SEMVER=${BUILD_VERSION#v}" >> "${GITHUB_ENV}"
+          echo "Resolved tag ${GITHUB_REF_NAME} → BUILD_REF=${BUILD_REF} BUILD_VERSION=${BUILD_VERSION} (sha ${BUILD_SHA})"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -31,14 +48,14 @@ jobs:
 
       - name: Build plugin zip
         run: |
-          chmod +x dist/build-dwc-plugin.sh dist/check-node-for-dwc-build.sh
-          dist/build-dwc-plugin.sh "$(pwd)/dwc-work" "${{ github.ref_name }}"
+          chmod +x dist/build-dwc-plugin.sh dist/check-node-for-dwc-build.sh dist/resolve-build-version.sh
+          dist/build-dwc-plugin.sh "$(pwd)/dwc-work"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           draft: false
           generate_release_notes: true
-          files: dist/ArborCTL-*.zip
+          files: dist/ArborCTL-${{ env.PLUGIN_SEMVER }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

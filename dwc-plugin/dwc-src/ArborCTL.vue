@@ -7,6 +7,9 @@
             <v-chip size="small" label :color="loaded ? 'success' : 'warning'">
                 {{ loaded ? "Loaded" : "Not loaded" }}
             </v-chip>
+            <v-chip v-if="loaded && daemonPaused" size="small" label color="warning" class="ml-2">
+                Daemon paused
+            </v-chip>
         </v-card-title>
 
         <v-card-subtitle>
@@ -95,6 +98,43 @@
 
             <v-alert v-if="!hasConfiguredSpindle" class="mt-4" type="warning" variant="outlined" density="compact">
                 No RRF spindle is configured. Define a spindle with <code>M950 R...</code> in <code>config.g</code> before binding it to a VFD here.
+            </v-alert>
+
+            <v-alert
+                v-if="loaded"
+                class="mt-4"
+                :type="daemonPaused ? 'warning' : 'info'"
+                variant="outlined"
+                density="compact"
+            >
+                <div class="font-weight-medium mb-1">Plugin update</div>
+                <p class="text-caption mb-2">
+                    {{ daemonPaused ? pluginUpdatePausedHint : pluginUpdateIdleHint }}
+                </p>
+                <div class="d-flex flex-wrap">
+                    <v-btn
+                        class="mr-2 mb-1"
+                        color="warning"
+                        variant="outlined"
+                        size="small"
+                        :disabled="uiFrozen || preparingUpdate || resumingUpdate"
+                        :loading="preparingUpdate"
+                        @click="preparePluginUpdate"
+                    >
+                        Pause daemon
+                    </v-btn>
+                    <v-btn
+                        class="mb-1"
+                        color="primary"
+                        variant="outlined"
+                        size="small"
+                        :disabled="uiFrozen || preparingUpdate || resumingUpdate || !daemonPaused"
+                        :loading="resumingUpdate"
+                        @click="resumePluginUpdate"
+                    >
+                        Resume daemon
+                    </v-btn>
+                </div>
             </v-alert>
 
             <v-divider class="my-4" />
@@ -226,6 +266,30 @@
                         hide-details="auto"
                     />
                 </v-col>
+                <v-col cols="6" sm="4" md="3">
+                    <v-text-field
+                        v-model.number="form.accelSec"
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        label="Accel (s)"
+                        density="compact"
+                        variant="outlined"
+                        hide-details="auto"
+                    />
+                </v-col>
+                <v-col cols="6" sm="4" md="3">
+                    <v-text-field
+                        v-model.number="form.decelSec"
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        label="Decel (s)"
+                        density="compact"
+                        variant="outlined"
+                        hide-details="auto"
+                    />
+                </v-col>
             </v-row>
 
             <v-row v-if="isThServo" dense class="mt-1">
@@ -248,14 +312,44 @@
                     </v-chip>
                 </v-col>
             </v-row>
+            <v-row dense class="mt-1">
+                <v-col cols="12">
+                    <v-chip size="small" class="mr-2" variant="outlined">
+                        Implied max RPM (120 × Hz / poles): {{ impliedMaxRpm }}
+                    </v-chip>
+                    <v-chip size="small" variant="outlined">
+                        Preview: {{ previewCmdRpm }} RPM → {{ previewHz }} Hz
+                    </v-chip>
+                </v-col>
+            </v-row>
+            <v-alert
+                v-if="nameplateRpmMismatch"
+                type="error"
+                density="compact"
+                variant="outlined"
+                class="mt-2"
+            >
+                Rated RPM {{ form.motorR }} does not match 120 × Hz / poles = {{ impliedMaxRpm }}.
+                2-pole 400 Hz is 24000 RPM; 4-pole 400 Hz is 12000 RPM.
+            </v-alert>
+            <v-alert
+                v-if="rrfMaxExceedsNameplate"
+                type="error"
+                density="compact"
+                variant="outlined"
+                class="mt-2"
+            >
+                RRF spindle max exceeds nameplate {{ impliedMaxRpm }} RPM. Frequency would clamp and that RPM would never be reached.
+            </v-alert>
             <p v-if="isThServo" class="text-caption text-medium-emphasis mt-2 mb-0">
                 TH Servo runs in <b>RPM</b>: the driver uses RRF spindle <b>min</b>/<b>max</b> (RPM) and nameplate rated RPM.
-                <b>Frequency (Hz)</b> below is still saved into <code>arborWizardFreqLimits</code> for compatibility; the TH driver does not use Hz for speed.
-                Baud is not on the object model — set it here to match <b>M575</b>.
+                <b>Frequency (Hz)</b> is still saved into <code>arborWizardFreqLimits</code> for compatibility; the TH driver does not use Hz for speed.
+                Rated RPM must still match <b>120 × Hz / poles</b>. Baud is not on the object model — set it here to match <b>M575</b>.
             </p>
             <p v-else class="text-caption text-medium-emphasis mt-2 mb-0">
-                Hz limits are derived from the RRF spindle min/max and capped by motor rated frequency. Baud is not
-                exposed on the object model; set it here to match <b>M575</b> in your user vars file.
+                Hz = |RPM| × poles / 120 (2-pole 400 Hz = 24k RPM). Limits come from RRF spindle min/max, capped by rated Hz.
+                Accel/decel are written to the VFD on Apply (the start lag after the run command is this ramp, not daemon lag).
+                Baud is not exposed on the object model; set it here to match <b>M575</b> in your user vars file.
             </p>
 
             <template v-if="isManualModbus">
@@ -343,6 +437,18 @@
 import { defineComponent } from "vue";
 
 import store from "./compat/dwcStore";
+import {
+    ARBORCTL_USER_VARS_PATH,
+    ARBOR_UART_CHANNELS,
+    FALLBACK_ARBOR_MODELS,
+    MANUAL_MODBUS_INDEX,
+    arborInternalName,
+    arborTypeName,
+    buildArborCtlConfigCode,
+    buildArborCtlUserVarsFile,
+    clampArborUartChannel,
+    isArborUartChannel
+} from "./arborctlApply";
 
 function getGlobal(key: string): any {
     const model = store.state?.machine?.model as any;
@@ -410,10 +516,7 @@ function fmtTelemetryDir(v: any): string {
 
 const BAUD_LIST = [4800, 9600, 19200, 38400, 57600];
 
-/** Index of "Manual Modbus (experimental)" in arborAvailableModels / arborModelInternalNames */
-const MANUAL_MODBUS_INDEX = 3;
-
-/** Index of "TH Servo (preliminary)" */
+/** Index of "TH Servo (preliminary)" — see arborctlApply MANUAL_MODBUS_INDEX */
 const TH_SERVO_INDEX = 4;
 
 /** Index of "H100" */
@@ -431,19 +534,23 @@ export default defineComponent({
             saving: false,
             configuring: false,
             testProbing: false,
+            preparingUpdate: false,
+            resumingUpdate: false,
             saveError: "" as string,
             form: {
-                channel: 1,
+                channel: 2,
                 baud: 9600,
                 address: 1,
                 typeIndex: 1,
                 spindleId: 0,
                 motorW: 1.5,
-                motorPoles: 4,
+                motorPoles: 2,
                 motorV: 220,
                 motorF: 400,
                 motorI: 4.0,
                 motorR: 24000,
+                accelSec: 2.5,
+                decelSec: 2.5,
                 manualSpec: DEFAULT_MANUAL_SPEC.slice() as number[]
             }
         };
@@ -454,6 +561,19 @@ export default defineComponent({
         },
         loaded(): boolean {
             return Boolean(getGlobal("arborctlLdd"));
+        },
+        daemonEnabled(): boolean {
+            const v = getOmGlobal("arborctlDaemonEnabled");
+            return v !== false;
+        },
+        daemonPaused(): boolean {
+            return this.loaded && !this.daemonEnabled;
+        },
+        pluginUpdateIdleHint(): string {
+            return "Before installing or upgrading the ArborCTL ZIP in DWC Settings → Plugins, pause the daemon so the installer can replace open numbered metas (M2604.g). After this release, later updates usually only need a pause once when migrating from an older ZIP.";
+        },
+        pluginUpdatePausedHint(): string {
+            return "Daemon paused — install or update the ArborCTL plugin ZIP now, then Resume (or reboot). Resume applies pending *.install numbered metas.";
         },
         version(): string | null {
             return getGlobal("arborctlVer") ?? null;
@@ -528,11 +648,7 @@ export default defineComponent({
             return rows;
         },
         channelItems(): Array<{ text: string; value: number }> {
-            return [
-                { text: "AUX 0 (first port)", value: 1 },
-                { text: "AUX 1 (second port)", value: 2 },
-                { text: "AUX 2 (third port)", value: 3 }
-            ];
+            return ARBOR_UART_CHANNELS;
         },
         baudItems(): number[] {
             return BAUD_LIST;
@@ -543,14 +659,7 @@ export default defineComponent({
         modelItems(): Array<{ text: string; value: number }> {
             const m = getGlobal("arborAvailableModels");
             if (!Array.isArray(m)) {
-                return [
-                    { text: "Shihlin SL3", value: 0 },
-                    { text: "Huanyang HY02D223", value: 1 },
-                    { text: "Yalang YL620-A", value: 2 },
-                    { text: "Manual Modbus (experimental)", value: MANUAL_MODBUS_INDEX },
-                    { text: "TH Servo (preliminary)", value: TH_SERVO_INDEX },
-                    { text: "H100", value: H100_INDEX }
-                ];
+                return FALLBACK_ARBOR_MODELS.map((text, i) => ({ text, value: i }));
             }
             return m.map((text: string, i: number) => ({ text, value: i }));
         },
@@ -641,25 +750,71 @@ export default defineComponent({
             const e = Math.min(mf, Math.ceil((maxRpm / 120) * poles));
             return { t, e };
         },
+        impliedMaxRpm(): number {
+            const poles = Number(this.form.motorPoles);
+            const mf = Number(this.form.motorF);
+            if (!poles || !mf || !Number.isFinite(poles) || !Number.isFinite(mf)) {
+                return 0;
+            }
+            return Math.round((120 * mf) / poles);
+        },
+        nameplateRpmTol(): number {
+            const implied = this.impliedMaxRpm;
+            if (implied <= 0) {
+                return 50;
+            }
+            return Math.max(50, implied * 0.01);
+        },
+        nameplateRpmMismatch(): boolean {
+            const rated = Number(this.form.motorR);
+            const implied = this.impliedMaxRpm;
+            if (!Number.isFinite(rated) || implied <= 0) {
+                return false;
+            }
+            return Math.abs(rated - implied) > this.nameplateRpmTol;
+        },
+        rrfMaxExceedsNameplate(): boolean {
+            const model = store.state.machine.model as any;
+            const spindles = model?.spindles;
+            const sid = this.form.spindleId;
+            const s = spindles && spindles[sid];
+            const implied = this.impliedMaxRpm;
+            if (!s || implied <= 0) {
+                return false;
+            }
+            const maxRpm = s.max != null ? Number(s.max) : 0;
+            if (!Number.isFinite(maxRpm) || maxRpm <= 0) {
+                return false;
+            }
+            return maxRpm > implied + this.nameplateRpmTol;
+        },
+        previewCmdRpm(): number {
+            const model = store.state.machine.model as any;
+            const spindles = model?.spindles;
+            const sid = this.form.spindleId;
+            const s = spindles && spindles[sid];
+            if (s && s.max != null) {
+                const maxRpm = Number(s.max);
+                if (Number.isFinite(maxRpm) && maxRpm > 0) {
+                    return Math.round(maxRpm);
+                }
+            }
+            const rated = Number(this.form.motorR);
+            return Number.isFinite(rated) && rated > 0 ? Math.round(rated) : 0;
+        },
+        previewHz(): number {
+            const poles = Number(this.form.motorPoles);
+            const rpm = this.previewCmdRpm;
+            if (!poles || !rpm || !Number.isFinite(poles) || !Number.isFinite(rpm)) {
+                return 0;
+            }
+            return Math.round((rpm / 120) * poles);
+        },
         modelTypeName(): string {
-            const items = this.modelItems;
-            const found = items.find((x) => x.value === this.form.typeIndex);
-            return found ? found.text : "";
+            return arborTypeName(this.form.typeIndex, getGlobal("arborAvailableModels"));
         },
         internalName(): string {
-            const names = getGlobal("arborModelInternalNames");
-            if (Array.isArray(names) && names[this.form.typeIndex] != null) {
-                return names[this.form.typeIndex];
-            }
-            const fallback = [
-                "shihlin-sl3",
-                "huanyang-hy02d223b",
-                "yalang-yl620a",
-                "modbus-manual-experimental",
-                "th-servo",
-                "h100"
-            ];
-            return fallback[this.form.typeIndex] || "huanyang-hy02d223b";
+            return arborInternalName(this.form.typeIndex, getGlobal("arborModelInternalNames"));
         },
         canSave(): boolean {
             if (!this.hasConfiguredSpindle) {
@@ -675,6 +830,8 @@ export default defineComponent({
                 this.form.motorF > 0 &&
                 this.form.motorI > 0 &&
                 this.form.motorR > 0 &&
+                this.form.accelSec > 0 &&
+                this.form.decelSec > 0 &&
                 Number.isFinite(hz.t) &&
                 Number.isFinite(hz.e) &&
                 hz.e >= hz.t;
@@ -682,6 +839,12 @@ export default defineComponent({
                 return false;
             }
             if (this.isManualModbus && !this.manualSpecValid) {
+                return false;
+            }
+            if (!isArborUartChannel(this.form.channel)) {
+                return false;
+            }
+            if (this.nameplateRpmMismatch || this.rrfMaxExceedsNameplate) {
                 return false;
             }
             return true;
@@ -721,8 +884,7 @@ export default defineComponent({
             if (this.form.address < 1 || this.form.address > 247) {
                 return false;
             }
-            const ch = this.form.channel;
-            if (ch < 1 || ch > 3) {
+            if (!isArborUartChannel(this.form.channel)) {
                 return false;
             }
             if (this.internalName === "huanyang-hy02d223b") {
@@ -763,7 +925,7 @@ export default defineComponent({
                     if (cfg[i] != null) {
                         const c = cfg[i];
                         this.form.typeIndex = c[0];
-                        this.form.channel = c[1];
+                        this.form.channel = clampArborUartChannel(c[1]);
                         this.form.address = c[2];
                         this.form.spindleId = i;
                         break;
@@ -780,6 +942,16 @@ export default defineComponent({
                 this.form.motorI = m[4];
                 this.form.motorR = m[5];
             }
+            const ramp = getGlobal("arborWizardRamp");
+            if (Array.isArray(ramp) && ramp[sid] != null && Array.isArray(ramp[sid]) && ramp[sid].length >= 2) {
+                const r = ramp[sid] as number[];
+                if (typeof r[0] === "number" && Number.isFinite(r[0]) && r[0] > 0) {
+                    this.form.accelSec = r[0];
+                }
+                if (typeof r[1] === "number" && Number.isFinite(r[1]) && r[1] > 0) {
+                    this.form.decelSec = r[1];
+                }
+            }
             const spec = getGlobal("arborModbusManualSpec");
             if (Array.isArray(spec) && spec[sid] != null) {
                 const row = spec[sid];
@@ -789,35 +961,7 @@ export default defineComponent({
             }
         },
         buildUserVarsFile(): string {
-            const f = this.form;
-            const hz = this.hzLimits;
-            const typeName = this.modelTypeName;
-            const lines = [
-                "; ArborCtl User Variables",
-                ";",
-                "; This file is automatically generated by the ArborCTL DWC plugin.",
-                "; You can edit this file manually at your own risk.",
-                "",
-                "; ArborCtl Configuration",
-                "; UART Configuration",
-                `M575 P${f.channel} B${f.baud} S7 ; Configure UART for Modbus RTU`,
-                "",
-                "; VFD Configuration",
-                `; Type: ${typeName} Channel: ${f.channel} Address: ${f.address}`,
-                `set global.arborVFDConfig[${f.spindleId}] = {${f.typeIndex}, ${f.channel}, ${f.address}} ; VFD configuration`,
-                `set global.arborMotorSpec[${f.spindleId}] = {${f.motorW}, ${f.motorPoles}, ${f.motorV}, ${f.motorF}, ${f.motorI}, ${f.motorR}} ; Wizard motor (kW,poles,V,Hz,A,RPM)`,
-                `set global.arborWizardFreqLimits[${f.spindleId}] = {${hz.t}, ${hz.e}} ; Min/max Hz from spindle limits`,
-                ""
-            ];
-            if (f.typeIndex === MANUAL_MODBUS_INDEX) {
-                lines.push(
-                    `set global.arborModbusManualSpec[${f.spindleId}] = {${f.manualSpec.join(
-                        ", "
-                    )}} ; Manual Modbus (experimental) — see doc/modbus-manual-experimental.md`,
-                    ""
-                );
-            }
-            return lines.join("\n");
+            return buildArborCtlUserVarsFile(this.form, this.hzLimits, this.modelTypeName);
         },
         async saveUserVars(options?: { quiet?: boolean }): Promise<void> {
             this.saveError = "";
@@ -825,7 +969,7 @@ export default defineComponent({
             try {
                 const content = this.buildUserVarsFile();
                 await store.dispatch("machine/upload", {
-                    filename: "0:/sys/arborctl-user-vars.g",
+                    filename: ARBORCTL_USER_VARS_PATH,
                     content,
                     showSuccess: !options?.quiet
                 });
@@ -847,16 +991,37 @@ export default defineComponent({
                 const f = this.form;
                 const hz = this.hzLimits;
                 const internal = this.internalName;
-                await store.dispatch("machine/sendCode", 'M98 P"0:/sys/arborctl-user-vars.g"');
-                const code =
-                    `M98 P"arborctl/${internal}/config.g" B${f.baud} C${f.channel} A${f.address} S${f.spindleId} ` +
-                    `W${f.motorW} U${f.motorPoles} V${f.motorV} F${f.motorF} I${f.motorI} R${f.motorR} T${hz.t} E${hz.e}`;
-                await store.dispatch("machine/sendCode", code);
+                await store.dispatch("machine/sendCode", `M98 P"${ARBORCTL_USER_VARS_PATH}"`);
+                await store.dispatch("machine/sendCode", buildArborCtlConfigCode(f, hz, internal));
             } catch (e) {
                 this.saveError = e instanceof Error ? e.message : String(e);
                 console.error("[ArborCTL] VFD config failed", e);
             } finally {
                 this.configuring = false;
+            }
+        },
+        async preparePluginUpdate(): Promise<void> {
+            this.saveError = "";
+            this.preparingUpdate = true;
+            try {
+                await store.dispatch("machine/sendCode", 'M98 P"arborctl/prepare-plugin-update.g"');
+            } catch (e) {
+                this.saveError = e instanceof Error ? e.message : String(e);
+                console.error("[ArborCTL] Prepare plugin update failed", e);
+            } finally {
+                this.preparingUpdate = false;
+            }
+        },
+        async resumePluginUpdate(): Promise<void> {
+            this.saveError = "";
+            this.resumingUpdate = true;
+            try {
+                await store.dispatch("machine/sendCode", 'M98 P"arborctl/prepare-plugin-update.g" S1');
+            } catch (e) {
+                this.saveError = e instanceof Error ? e.message : String(e);
+                console.error("[ArborCTL] Resume plugin update failed", e);
+            } finally {
+                this.resumingUpdate = false;
             }
         },
         async testModbusProbe(): Promise<void> {

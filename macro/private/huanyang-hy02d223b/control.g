@@ -135,10 +135,16 @@ var newFreq = { 0 }
 
 var commandChange = { false }
 
-; Stop spindle as early as possible if it should not be running
-if { !var.shouldRun && var.vfdRunning }
+; Stop if RRF wants off and we cannot prove the VFD is already stopped.
+; A failed 0x04 poll must not skip 0x08 (vfdRunning stays false).
+var lastReportedRunning = { global.arborVFDStatus[param.S][0] }
+var commandedRun = { var.trackedDirection != 0 }
+var stopNeeded = { var.vfdRunning || var.lastReportedRunning || var.commandedRun }
+var doStop = { !var.shouldRun && var.stopNeeded }
+
+if { var.doStop }
     echo { "ArborCtl: Stopping spindle " ^ param.S }
-    ; Set frequency to 0
+    ; Set frequency to 0 (not a negative). Control stop byte is 0x08, not -1.
     M2604 P{param.C} A{param.A} B{{0x05, 0x02, 0x00, 0x00}} R4
     G4 P{var.cmdWait}
 
@@ -153,19 +159,27 @@ elif { var.shouldRun }
     var maxFreq = { global.arborState[param.S][3][1] }
     var minFreq = { global.arborState[param.S][3][0] }
 
-    ; f = RPM x poles / 120
-    set var.newFreq = { min(var.maxFreq, max(var.minFreq, (spindles[param.S].active * var.numPoles) / 120)) }
+    ; f = |RPM| x poles / 120 — abs so reverse never yields a negative Hz
+    var cmdRpm = { abs(spindles[param.S].active) }
+    set var.newFreq = { min(var.maxFreq, max(var.minFreq, (var.cmdRpm * var.numPoles) / 120)) }
 
     ; Huanyang protocol expects frequency in 0.01Hz units
     var scaledFreq = { floor(var.newFreq * 100) }
+    if { var.scaledFreq < 0 }
+        set var.scaledFreq = 0
     var freqHigh = { floor(var.scaledFreq / 256) }
     var freqLow = { var.scaledFreq - (var.freqHigh * 256) }
+    if { var.freqHigh < 0 }
+        set var.freqHigh = 0
+    if { var.freqLow < 0 }
+        set var.freqLow = 0
 
     ; Check if current frequency doesn't match the requested one
     var currentScaledFreq = { floor(var.setFreq * 100) }
 
     if { var.currentScaledFreq != var.scaledFreq }
-        echo { "ArborCtl: Setting spindle " ^ param.S ^ " frequency to " ^ var.newFreq ^ " Hz" }
+        echo { "ArborCtl: Setting spindle " ^ param.S ^ " to " ^ var.newFreq ^ " Hz" }
+        echo { "ArborCtl: poles=" ^ var.numPoles ^ " cmdRPM=" ^ var.cmdRpm }
         M2604 P{param.C} A{param.A} B{{0x05, 0x02, var.freqHigh, var.freqLow}} R4
         G4 P{var.cmdWait}
         set var.commandChange = { true }
@@ -197,8 +211,8 @@ elif { var.shouldRun }
             set var.reportedDirection = { -1 }
             set var.commandChange = { true }
 
-; Calculate current RPM from output frequency
-var currentRPM = { var.currentFreq * 60 * 2 / var.numPoles }
+; RPM = 120 * f / poles
+var currentRPM = { var.currentFreq * 120 / var.numPoles }
 
 ; Check if frequency is stable (within 5% of target)
 var targetFreq = { var.shouldRun ? var.newFreq : 0 }
@@ -213,8 +227,10 @@ set global.arborState[param.S][1] = { var.commandChange }
 set global.arborState[param.S][0][2] = { var.reportedDirection }
 
 ; Update public status variables
-set global.arborVFDStatus[param.S][0] = { var.vfdRunning }
-set global.arborVFDStatus[param.S][1] = { var.vfdRunning ? var.reportedDirection : 0 }
+; Incomplete poll must not clear running/direction or M5 will skip 0x08 next tick.
+if { var.haveStatusFrame }
+    set global.arborVFDStatus[param.S][0] = { var.vfdRunning }
+    set global.arborVFDStatus[param.S][1] = { var.vfdRunning ? var.reportedDirection : 0 }
 set global.arborVFDStatus[param.S][2] = { var.currentFreq }
 set global.arborVFDStatus[param.S][3] = { var.currentRPM }
 set global.arborVFDStatus[param.S][4] = { var.freqStable }

@@ -61,9 +61,12 @@ Use the connection dialog as usual. On **RRF 3.7**, HTTP must be enabled (`M586 
 ## Production plugin ZIP
 
 ```bash
-bash dist/build-dwc-plugin.sh /path/to/DuetWebControl v0.7.0
-# Output: dist/ArborCTL-0.7.0.zip
+bash dist/build-dwc-plugin.sh /path/to/DuetWebControl
+# On tag v0.7.0: dist/ArborCTL-0.7.0.zip
+# Untagged:      dist/ArborCTL-<nearest-tag-semver>-<sha>[-dirty].zip
 ```
+
+Version is resolved from git tags ([`dist/resolve-build-version.sh`](../dist/resolve-build-version.sh)); do not pass a version argument.
 
 Release CI clones **DWC `v3.7.0-beta.1`**. The ZIP’s `dwcVersion` must **exactly** match the host DWC.
 

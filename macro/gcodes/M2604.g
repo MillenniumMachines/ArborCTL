@@ -5,6 +5,10 @@
 ; terminates only this gcode invocation, and the caller can inspect
 ; global.arborRetVal (null on failure) without crashing.
 ;
+; V"resp" creates a new file-scope local. Do not declare var resp first
+; (already exists). Do not wrap V"resp" / var.resp in if/while: RRF EndScope
+; plus DSF local cleanup throws "unknown variable 'resp'" on every tick.
+;
 ; Parameters:
 ;   P - UART channel
 ;   A - VFD address
@@ -15,9 +19,9 @@ M98 P"arborctl/delay-for-command.g"
 
 set global.arborRetVal = null
 
-if { exists(param.R) && param.R > 0 }
-    M260.4 P{param.P} A{param.A} B{param.B} R{param.R} V"resp"
-    if { exists(var.resp) && var.resp != null }
-        set global.arborRetVal = var.resp
-else
+if { !exists(param.R) || param.R <= 0 }
     M260.4 P{param.P} A{param.A} B{param.B}
+    M99
+
+M260.4 P{param.P} A{param.A} B{param.B} R{param.R} V"resp"
+set global.arborRetVal = var.resp

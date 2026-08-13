@@ -12,6 +12,8 @@ if { !exists(param.C) }
 if { !exists(param.S) }
     abort { "ArborCtl: No spindle specified!" }
 
+M98 P"arborctl/delay-for-command.g" S250
+
 M98 P"arborctl/h100/settings.g"
 
 ; Initialize motor data if needed
@@ -111,10 +113,14 @@ if { !var.shouldRun && var.vfdRunning }
     set var.vfdRunning = false
     set var.lastDir = 0
 elif { var.shouldRun }
-    ; f = RPM * poles / 120 ; store as deci-Hz
-    var newFreq = { ceil(min(var.maxFreq, max(var.minFreq, (abs(spindles[param.S].current) * var.numPoles) / 120))) * 10 }
+    ; f = |RPM| * poles / 120 ; store as deci-Hz
+    var cmdRpm = { abs(spindles[param.S].active) }
+    var targetHz = { min(var.maxFreq, max(var.minFreq, (var.cmdRpm * var.numPoles) / 120)) }
+    var newFreq = { ceil(var.targetHz) * 10 }
 
     if { var.vfdSetDeciHz != var.newFreq }
+        echo { "ArborCtl: Setting spindle " ^ param.S ^ " to " ^ var.targetHz ^ " Hz" }
+        echo { "ArborCtl: poles=" ^ var.numPoles ^ " cmdRPM=" ^ var.cmdRpm }
         M2600 E0 P{param.C} A{param.A} F6 R{global.h100SetFreqAddr} B{var.newFreq,}
         set var.commandChange = true
 
@@ -137,8 +143,8 @@ elif { var.shouldRun }
 
 ; RPM = 120 * f / poles
 var currentRPM = { var.currentFrequency * 120 / var.numPoles }
-var targetHz = { abs(spindles[param.S].current) * var.numPoles / 120 }
-var isStable = { var.vfdRunning && abs(var.currentFrequency - var.targetHz) < 1.0 }
+var stableHz = { abs(spindles[param.S].active) * var.numPoles / 120 }
+var isStable = { var.vfdRunning && abs(var.currentFrequency - var.stableHz) < 1.0 }
 
 set global.arborState[param.S][2] = { global.arborVFDStatus[param.S] != null ? global.arborVFDStatus[param.S][4] : false }
 set global.arborState[param.S][1] = { var.commandChange }

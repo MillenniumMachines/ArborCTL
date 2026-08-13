@@ -54,39 +54,39 @@ if { global.arborState[param.S][0] == null }
         set global.arborState[param.S][3] = { var.spindleLimits }
 
     ; Clear pending alarms: write 4112 to register 4100 (per PR #17)
-    M98 P"arborctl/delay-for-command.g"
+    M98 P"arborctl/delay-for-command.g" S250
     M2600 E0 P{param.C} A{param.A} F6 R{4100} B{4112,}
     G4 P{50}
 
 ; ---------------------------------------------------------------------
 ; Read status registers
 ; ---------------------------------------------------------------------
-M98 P"arborctl/delay-for-command.g"
+M98 P"arborctl/delay-for-command.g" S250
 M2601 E0 P{param.C} A{param.A} F3 R{4096} B1
 var motorSpeed = { global.arborRetVal }
 
-M98 P"arborctl/delay-for-command.g"
+M98 P"arborctl/delay-for-command.g" S250
 M2601 E0 P{param.C} A{param.A} F3 R{4107} B1
 var instCurrentInfo = { global.arborRetVal }
 var instCurrent = { var.instCurrentInfo != null ? (var.instCurrentInfo[0] * 0.1) : 0 }
 
-M98 P"arborctl/delay-for-command.g"
+M98 P"arborctl/delay-for-command.g" S250
 M2601 E0 P{param.C} A{param.A} F3 R{4110} B1
 var speedCommandInfo = { global.arborRetVal }
 var currentSpeedCommand = { var.speedCommandInfo != null ? var.speedCommandInfo[0] : 0 }
 
-M98 P"arborctl/delay-for-command.g"
+M98 P"arborctl/delay-for-command.g" S250
 M2601 E0 P{param.C} A{param.A} F3 R{4120} B1
 var loadRateInfo = { global.arborRetVal }
 var loadRate = { var.loadRateInfo != null ? var.loadRateInfo[0] : 0 }
 
-M98 P"arborctl/delay-for-command.g"
+M98 P"arborctl/delay-for-command.g" S250
 M2601 E0 P{param.C} A{param.A} F3 R{4122} B1
 var alarmCode = { global.arborRetVal }
 
 if { var.motorSpeed == null || var.alarmCode == null }
     if { var.wasRunning }
-        M98 P"arborctl/delay-for-command.g"
+        M98 P"arborctl/delay-for-command.g" S250
         M2600 E0 P{param.C} A{param.A} F6 R{4112} B{0,}
         abort { "ArborCtl: Failed to read status from TH Servo!" }
 
@@ -95,7 +95,7 @@ if { var.hasAlarm }
     echo { "ArborCtl: TH Servo Alarm Code: " ^ var.alarmCode[0] }
     set global.arborState[param.S][4] = true
     if { var.wasRunning }
-        M98 P"arborctl/delay-for-command.g"
+        M98 P"arborctl/delay-for-command.g" S250
         M2600 E0 P{param.C} A{param.A} F6 R{4112} B{0,}
     M99
 else
@@ -109,7 +109,7 @@ var isStable = { var.wasRunning && (var.diff < max(50, var.currentSpeedCommand *
 ; ---------------------------------------------------------------------
 if { !var.shouldRun && var.wasRunning }
     echo { "ArborCtl: Stopping spindle " ^ param.S }
-    M98 P"arborctl/delay-for-command.g"
+    M98 P"arborctl/delay-for-command.g" S250
     M2600 E0 P{param.C} A{param.A} F6 R{4112} B{0,}
     set global.arborState[param.S][1] = { true }
 
@@ -126,7 +126,7 @@ elif { var.shouldRun }
             set var.dirChanged = true
 
     if { var.currentSpeedCommand != var.targetRPM }
-        M98 P"arborctl/delay-for-command.g"
+        M98 P"arborctl/delay-for-command.g" S250
         M2600 E0 P{param.C} A{param.A} F6 R{76} B{var.targetRPM,}
         set global.arborState[param.S][1] = { true }
 
@@ -137,7 +137,7 @@ elif { var.shouldRun }
         elif { spindles[param.S].state == "reverse" }
             set var.modeWord = 4369
 
-        M98 P"arborctl/delay-for-command.g"
+        M98 P"arborctl/delay-for-command.g" S250
         M2600 E0 P{param.C} A{param.A} F6 R{4112} B{var.modeWord,}
         set global.arborState[param.S][1] = { true }
 
