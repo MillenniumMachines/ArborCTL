@@ -30,6 +30,7 @@
 
 | Doc | Contents |
 |-----|----------|
+| **[doc/vfd-modbus-maps.md](doc/vfd-modbus-maps.md)** | Supported drives: Modbus (and Huanyang) registers ArborCTL uses |
 | **[doc/dwc-plugin.md](doc/dwc-plugin.md)** | DWC UI: fields, object model, telemetry, Test Modbus, troubleshooting |
 | **[doc/dwc-development.md](doc/dwc-development.md)** | Local `npm run dev` with a DWC checkout |
 | **[doc/modbus-manual-experimental.md](doc/modbus-manual-experimental.md)** | Manual Modbus 11-int register map |
@@ -57,7 +58,7 @@
 
 ## Supported drives
 
-Model list and defaults live in **`sys/arborctl-vars.g`** (`arborAvailableModels`, `arborModelInternalNames`). Current entries include Shihlin, Huanyang, Yalang, Manual Modbus (experimental), TH Servo (preliminary), and **H100**. Each has **`config.g`**, **`control.g`**, and usually **`settings.g`** under **`macro/private/<internal-name>/`** (installed to **`0:/sys/arborctl/`**).
+Model list lives in **`dwc-plugin/dwc-src/arborctlApply.ts`** (`FALLBACK_ARBOR_MODELS` / `FALLBACK_ARBOR_INTERNAL_NAMES`); firmware picks the driver from a **local** id vector in **`control-spindle.g`** (not `key=global`). Defaults for address/baud stay in **`sys/arborctl-vars.g`**. Current entries include Shihlin, Huanyang, Yalang, Manual Modbus (experimental), TH Servo (preliminary), and **H100**. Each has **`config.g`**, **`control.g`**, and usually **`settings.g`** under **`macro/private/<internal-name>/`** (installed to **`0:/sys/arborctl/`**). Registers, function codes, and scales: **[doc/vfd-modbus-maps.md](doc/vfd-modbus-maps.md)**.
 
 ---
 

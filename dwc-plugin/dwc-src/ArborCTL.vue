@@ -39,7 +39,8 @@
                 </div>
                 <p class="text-caption text-medium-emphasis mb-2">
                     From <code>arborVFDStatus</code> / <code>arborVFDPower</code> (daemon polling). Load % is
-                    driver-defined (e.g. VFD power estimate, servo register, or 0). Feed protect when load &gt;
+                    driver-defined (e.g. VFD power estimate, H100 FC4 current/power, servo register, or 0).
+                    Feed protect when load &gt;
                     <b>{{ arborMaxLoadDisplay }}%</b> (<code>global.arborMaxLoad</code>).
                 </p>
                 <v-table v-if="telemetryRows.length > 0" density="compact">
@@ -597,8 +598,6 @@ export default defineComponent({
             if (!Array.isArray(cfg)) {
                 return [];
             }
-            const models = getOmGlobal("arborAvailableModels");
-            const internal = getOmGlobal("arborModelInternalNames");
             const st = getOmGlobal("arborVFDStatus");
             const pw = getOmGlobal("arborVFDPower");
             const comm = getOmGlobal("arborVFDCommReady");
@@ -608,12 +607,7 @@ export default defineComponent({
                     continue;
                 }
                 const typeIdx = cfg[i][0];
-                let driveName = `Type ${typeIdx}`;
-                if (Array.isArray(models) && models[typeIdx] != null) {
-                    driveName = String(models[typeIdx]);
-                } else if (Array.isArray(internal) && internal[typeIdx] != null) {
-                    driveName = String(internal[typeIdx]);
-                }
+                const driveName = arborTypeName(typeof typeIdx === "number" ? typeIdx : 0);
                 const s = Array.isArray(st) ? st[i] : null;
                 const p = Array.isArray(pw) ? pw[i] : null;
                 let commLabel = "—";
@@ -657,11 +651,7 @@ export default defineComponent({
             return [2, 4];
         },
         modelItems(): Array<{ text: string; value: number }> {
-            const m = getGlobal("arborAvailableModels");
-            if (!Array.isArray(m)) {
-                return FALLBACK_ARBOR_MODELS.map((text, i) => ({ text, value: i }));
-            }
-            return m.map((text: string, i: number) => ({ text, value: i }));
+            return FALLBACK_ARBOR_MODELS.map((text, i) => ({ text, value: i }));
         },
         isManualModbus(): boolean {
             return this.form.typeIndex === MANUAL_MODBUS_INDEX;
@@ -811,10 +801,10 @@ export default defineComponent({
             return Math.round((rpm / 120) * poles);
         },
         modelTypeName(): string {
-            return arborTypeName(this.form.typeIndex, getGlobal("arborAvailableModels"));
+            return arborTypeName(this.form.typeIndex);
         },
         internalName(): string {
-            return arborInternalName(this.form.typeIndex, getGlobal("arborModelInternalNames"));
+            return arborInternalName(this.form.typeIndex);
         },
         canSave(): boolean {
             if (!this.hasConfiguredSpindle) {

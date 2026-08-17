@@ -1,8 +1,7 @@
 ; arborctl-vars.g - Variables required for ArborCtl RS485 spindle control
 
-; Available Spindle / VFD models
-global arborAvailableModels = { "Shihlin SL3", "Huanyang HY02D223", "Yalang YL620-A", "Manual Modbus (experimental)", "TH Servo (preliminary)", "H100" }
-global arborModelInternalNames = { "shihlin-sl3", "huanyang-hy02d223b", "yalang-yl620a", "modbus-manual-experimental", "th-servo", "h100" }
+; VFD catalog (display names / folder ids) lives in DWC arborctlApply.ts — not in OM (8KB).
+; Type index in arborVFDConfig[n][0] selects the driver. Firmware uses a local id vector.
 global arborModelDefaultAddress = { 1, 1, 10, 1, 1, 1 }
 global arborModelDefaultBaudRateIndex = { 1, 1, 2, 1, 2, 1 }
 

@@ -1,5 +1,7 @@
 # HY02D223B protocol and ArborCtl implementation notes
 
+See also the catalog of all ArborCTL drive maps: [vfd-modbus-maps.md](vfd-modbus-maps.md).
+
 This note documents the Huanyang HY02D223B work that was added to ArborCtl and the protocol decisions behind it.
 
 ## Source of truth

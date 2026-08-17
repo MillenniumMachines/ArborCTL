@@ -28,8 +28,7 @@ The panel reads **user globals** from `state.machine.model.global` (with a fallb
 |--------|---------|
 | `arborctlLdd` | ArborCTL loaded |
 | `arborctlVer` | Version string |
-| `arborAvailableModels` / `arborModelInternalNames` | VFD list and macro folder names |
-| `arborVFDConfig` | Per-spindle `{ typeIndex, channel, address }` |
+| `arborVFDConfig` | Per-spindle `{ typeIndex, channel, address }` (type index selects the DWC catalog / driver folder) |
 | `arborMotorSpec` | Per-spindle motor nameplate vector |
 | `arborModbusManualSpec` | Manual Modbus 11-int register map (see [modbus-manual-experimental.md](modbus-manual-experimental.md)) |
 | `arborVFDStatus` | Per-spindle `{ running, dir, Hz, RPM, stable }` |
@@ -42,7 +41,7 @@ Until you connect to a board, many fields are empty; the form still renders.
 
 ---
 
-## VFD models (order in `arborctl-vars.g`)
+## VFD models (order in `arborctlApply.ts`)
 
 | Index | Label | Internal folder |
 |------|--------|-----------------|
@@ -53,7 +52,7 @@ Until you connect to a board, many fields are empty; the form still renders.
 | 4 | TH Servo (preliminary) | `th-servo` |
 | 5 | H100 | `h100` |
 
-**H100** — Standard Modbus RTU (FluidNC-compatible). See [h100-notes.md](h100-notes.md).
+**H100** — Standard Modbus RTU (FluidNC-compatible). See [h100-notes.md](h100-notes.md). Load % comes from the FC4 monitor block (output current, or native output power when the reply includes it).
 
 **TH Servo (preliminary)** — RS485 servo spindle support. The UI shows **min/max RPM** instead of Hz summary chips.
 
@@ -70,7 +69,7 @@ Until you connect to a board, many fields are empty; the form still renders.
 
 ## Live spindle telemetry
 
-When ArborCTL is loaded, the panel lists **configured** spindles with Comm / Run / Dir / Hz / RPM / Stable / Power / Load from the object model globals above.
+When ArborCTL is loaded, the panel lists **configured** spindles with Comm / Run / Dir / Hz / RPM / Stable / Power / Load from the object model globals above. **H100** estimates load from FC4 output current (Huanyang-style V×I) or native register `000C` when present; short clones stay at 0.
 
 **Spindle-delay wait (`G4.9`):** ArborCTL’s numbered meta `G4.9 S<spindle>` waits until `arborVFDStatus[S][4]` (stable) is true after a speed/run change. It is the VFD ramp settle wait (default max from `arborWizardRamp`, else 30 s) — not NeXT `M3.9` / `M5.9` timed dwells. Already-stable spindles return immediately. Do not call `G4.9` from the daemon input.
 
