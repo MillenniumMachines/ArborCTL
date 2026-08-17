@@ -1,5 +1,7 @@
 # HY02D223B protocol and ArborCtl implementation notes
 
+See also the catalog of all ArborCTL drive maps: [vfd-modbus-maps.md](vfd-modbus-maps.md).
+
 This note documents the Huanyang HY02D223B work that was added to ArborCtl and the protocol decisions behind it.
 
 ## Source of truth
@@ -67,6 +69,8 @@ The HY02D223B folder now mirrors the per-model structure already used by the Shi
 - `PD144` rated RPM at `50 Hz`
 - `PD005` maximum operating frequency
 - `PD011` lower frequency limit
+- `PD014` acceleration time (0.1 s units, from wizard `J`)
+- `PD015` deceleration time (0.1 s units, from wizard `K`)
 - `PD023` reverse rotation enable
 - `PD001` run commands from communication
 - `PD002` frequency source from communication

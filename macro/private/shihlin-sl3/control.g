@@ -10,6 +10,9 @@ if { !exists(param.C) }
 if { !exists(param.S) }
     abort { "ArborCtl: No spindle specified!" }
 
+; Space RS485 frames (Huanyang-class pacing for Modbus RTU)
+M98 P"arborctl/delay-for-command.g" S250
+
 var motorAddr    = 10501
 var limitsAddr   = 10100
 var freqConvAddr = 10008
@@ -140,27 +143,17 @@ elif { var.shouldRun }
     var maxFreq    = { global.arborState[param.S][3][0] }
     var minFreq    = { global.arborState[param.S][3][1] }
 
-    ; If the VFD conversion factor is set to 60, then we can simply give the VFD
-    ; the spindle RPM and it will calculate the frequency for us.
-    ; If we do this calculation ourselves, there is a possibility of slight
-    ; inaccuracy as we need to send round integers to the VFD.
-    var newFreq = { abs(spindles[param.S].current) }
-
-    if { var.convFactor != 60 }
-        ; RPM = 120 x f / poles.
-        ; f = RPM x poles / 120
-        ; Adjust for the conversion factor and divide by
-        ; 60 to normalise to Hz.
-
-        ; Account for new convFactor
-        ; Clamp the frequency to the limits and ensure we get a valid result
-        ; We have to split this into multiple variables to avoid stack overflow
-        var freqT = { abs(spindles[param.S].current) * var.numPoles) / 120 }
-        var freqL = { min(var.maxFreq, max(var.minFreq, var.freqT)) }
-        set var.newFreq = { ceil(var.freqL * var.convFactor) }
+    ; f = |RPM| * poles / 120, then scale to the VFD register with convFactor.
+    ; Do not special-case convFactor==60 (that skipped Hz math on 2-pole).
+    var cmdRpm = { abs(spindles[param.S].active) }
+    var freqT = { (var.cmdRpm * var.numPoles) / 120 }
+    var freqL = { min(var.maxFreq, max(var.minFreq, var.freqT)) }
+    var newFreq = { ceil(var.freqL * var.convFactor) }
 
     ; Set input frequency if it doesn't match the RRF value
     if { var.vfdInputFreq != var.newFreq }
+        echo { "ArborCtl: Setting spindle " ^ param.S ^ " to " ^ var.freqL ^ " Hz" }
+        echo { "ArborCtl: poles=" ^ var.numPoles ^ " cmdRPM=" ^ var.cmdRpm }
         M2600 E0 P{param.C} A{param.A} F6 R{var.freqAddr} B{var.newFreq,}
         set global.arborState[param.S][1] = { true }
 
@@ -174,9 +167,9 @@ elif { var.shouldRun }
         M2600 E0 P{param.C} A{param.A} F6 R{var.statusAddr} B{4,}
         set global.arborState[param.S][1] = { true }
 
-; Calculate current RPM from output frequency
-var currentFrequency = { var.vfdOutputFreq * 0.01 } ; Convert to Hz
-var currentRPM       = { var.currentFrequency * 60 / (global.arborState[param.S][0][0][1] / 2) }
+; RPM = 120 * f / poles
+var currentFrequency = { var.vfdOutputFreq * 0.01 }
+var currentRPM       = { var.currentFrequency * 120 / global.arborState[param.S][0][0][1] }
 var isStable         = { var.vfdRunning && var.vfdSpeedReached }
 
 ; Save previous stability flag for stability change detection

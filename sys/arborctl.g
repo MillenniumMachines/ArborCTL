@@ -16,6 +16,10 @@ if { !exists(global.arborctlVarsLoaded) }
     M98 P"arborctl-vars.g"
     global arborctlVarsLoaded=true
 
+; Apply pending numbered metas (M2604.install → M2604.g, etc.)
+if { fileexists("0:/sys/arborctl/apply-sys-gcodes.g") }
+    M98 P"arborctl/apply-sys-gcodes.g"
+
 if { !exists(global.arborctlLdd) }
     global arborctlLdd=false
 else

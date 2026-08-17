@@ -60,9 +60,17 @@ set global.sl3ConfigParams[7] = { {10100, { var.maxFreq, var.minFreq, }} }
 set global.sl3ConfigParams[8] = { {10109, {var.maxFreq, 50, 333, 1}} }
 
 ; P.29/01-05 - Acceleration/deceleration curve selection: 1
-; P.4/01-06 - Acceleration time: 2.5s
-; P.5/01-07 - Deceleration time: 2.5s
-set global.sl3ConfigParams[9] = { {10105, {1, 250, 250}} }
+; P.4/01-06 - Acceleration time (0.01 s units)
+; P.5/01-07 - Deceleration time (0.01 s units)
+var sl3AccelSec = 2.5
+var sl3DecelSec = 2.5
+if { exists(param.J) && param.J > 0 }
+    set var.sl3AccelSec = { param.J }
+if { exists(param.K) && param.K > 0 }
+    set var.sl3DecelSec = { param.K }
+var sl3Accel = { ceil(var.sl3AccelSec * 100) }
+var sl3Decel = { ceil(var.sl3DecelSec * 100) }
+set global.sl3ConfigParams[9] = { {10105, {1, var.sl3Accel, var.sl3Decel}} }
 
 ; P.28/01-15 - Output frequency filter time: 1
 set global.sl3ConfigParams[10] = { {10115, {1,}} }

@@ -64,19 +64,20 @@ var maxHz = { global.arborState[param.S][3][1] }
 
 var shouldRun = { (spindles[param.S].state == "forward" || spindles[param.S].state == "reverse") && spindles[param.S].active > 0 }
 
-; Target Hz from RRF spindle RPM
+; Target Hz from RRF spindle RPM (display / stability). Write scale stays wrNum/wrDen.
+var cmdRpm = { abs(spindles[param.S].active) }
 var targetHz = { 0 }
 if { var.shouldRun }
-    set var.targetHz = { min(var.maxHz, max(var.minHz, (abs(spindles[param.S].current) * var.numPoles) / 120)) }
+    set var.targetHz = { min(var.maxHz, max(var.minHz, (var.cmdRpm * var.numPoles) / 120)) }
 
 var rawSet = { 0 }
 if { var.shouldRun }
-    set var.rawSet = { min(65535, max(0, floor(abs(spindles[param.S].current) * var.wn / var.wd))) }
+    set var.rawSet = { min(65535, max(0, floor(var.cmdRpm * var.wn / var.wd))) }
 
 ; --- Read feedback frequency register (optional); else use commanded raw ---
 var rawFb = { var.rawSet }
 if { var.rRf > 0 }
-    M98 P"arborctl/delay-for-command.g"
+    M98 P"arborctl/delay-for-command.g" S250
     M2601 E0 P{param.C} A{param.A} F3 R{var.rRf} B1
     if { global.arborRetVal != null && #global.arborRetVal >= 1 }
         set var.rawFb = { global.arborRetVal[0] }
@@ -97,9 +98,9 @@ var freqStable = { abs(var.outHz - var.targetHz) < max(0.25, var.targetHz * 0.05
 
 ; --- Stop ---
 if { !var.shouldRun }
-    M98 P"arborctl/delay-for-command.g"
+    M98 P"arborctl/delay-for-command.g" S250
     M2600 E0 P{param.C} A{param.A} F6 R{var.rWf} B{0,}
-    M98 P"arborctl/delay-for-command.g"
+    M98 P"arborctl/delay-for-command.g" S250
     M2600 E0 P{param.C} A{param.A} F6 R{var.rCmd} B{var.vStop,}
     set global.arborModbusManualLastRaw[param.S] = { 0 }
     set global.arborState[param.S][1] = { true }
@@ -111,7 +112,14 @@ if { !var.shouldRun }
     M99
 
 ; --- Run: write frequency then direction command ---
-M98 P"arborctl/delay-for-command.g"
+var lastRaw = { 0 }
+if { exists(global.arborModbusManualLastRaw) && global.arborModbusManualLastRaw[param.S] != null }
+    set var.lastRaw = { global.arborModbusManualLastRaw[param.S] }
+if { var.rawSet != var.lastRaw }
+    echo { "ArborCtl: Setting spindle " ^ param.S ^ " to " ^ var.targetHz ^ " Hz" }
+    echo { "ArborCtl: poles=" ^ var.numPoles ^ " cmdRPM=" ^ var.cmdRpm }
+
+M98 P"arborctl/delay-for-command.g" S250
 M2600 E0 P{param.C} A{param.A} F6 R{var.rWf} B{var.rawSet,}
 set global.arborModbusManualLastRaw[param.S] = { var.rawSet }
 
@@ -121,7 +129,7 @@ if { spindles[param.S].state == "forward" }
 elif { spindles[param.S].state == "reverse" }
     set var.cmdVal = { var.vRev }
 
-M98 P"arborctl/delay-for-command.g"
+M98 P"arborctl/delay-for-command.g" S250
 M2600 E0 P{param.C} A{param.A} F6 R{var.rCmd} B{var.cmdVal,}
 set global.arborState[param.S][1] = { true }
 

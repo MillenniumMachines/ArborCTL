@@ -1,6 +1,7 @@
 ; modbus-fc3-probe.g - M575 + one Modbus RTU function 03 (read holding registers)
 ;
 ; Use from DWC "Test Modbus" for drives that probe with M2601 FC3 in config.g.
+; Tries preferred channel C, then P2, P3, P1 (uart-channel-probe.g).
 ; Parameters: B baud, C UART channel, A slave address, R holding register address (decimal).
 
 if { !exists(param.B) }
@@ -15,14 +16,10 @@ if { !exists(param.A) }
 if { !exists(param.R) }
     abort { "ArborCtl: modbus-fc3-probe - No register (R)!" }
 
-M575 P{param.C} B{param.B} S7
+M98 P"arborctl/uart-channel-probe.g" B{param.B} C{param.C} A{param.A} R{param.R}
 
-M98 P"arborctl/delay-for-command.g"
-
-M2601 E0 P{param.C} A{param.A} F3 R{param.R} B1
-
-if { global.arborRetVal == null }
+if { global.arborProbeChannel == null || global.arborRetVal == null }
     echo { "ArborCtl: FC3 probe FAILED — reg " ^ param.R ^ " (check baud, address, AUX port, termination)." }
     M99
 
-echo { "ArborCtl: FC3 probe OK — reg " ^ param.R ^ " value " ^ global.arborRetVal }
+echo { "ArborCtl: FC3 probe OK — channel P" ^ global.arborProbeChannel ^ " reg " ^ param.R ^ " value " ^ global.arborRetVal }

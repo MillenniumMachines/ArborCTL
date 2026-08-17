@@ -30,6 +30,7 @@
 
 | Doc | Contents |
 |-----|----------|
+| **[doc/vfd-modbus-maps.md](doc/vfd-modbus-maps.md)** | Supported drives: Modbus (and Huanyang) registers ArborCTL uses |
 | **[doc/dwc-plugin.md](doc/dwc-plugin.md)** | DWC UI: fields, object model, telemetry, Test Modbus, troubleshooting |
 | **[doc/dwc-development.md](doc/dwc-development.md)** | Local `npm run dev` with a DWC checkout |
 | **[doc/modbus-manual-experimental.md](doc/modbus-manual-experimental.md)** | Manual Modbus 11-int register map |
@@ -57,7 +58,7 @@
 
 ## Supported drives
 
-Model list and defaults live in **`sys/arborctl-vars.g`** (`arborAvailableModels`, `arborModelInternalNames`). Current entries include Shihlin, Huanyang, Yalang, Manual Modbus (experimental), TH Servo (preliminary), and **H100**. Each has **`config.g`**, **`control.g`**, and usually **`settings.g`** under **`macro/private/<internal-name>/`** (installed to **`0:/sys/arborctl/`**).
+Model list lives in **`dwc-plugin/dwc-src/arborctlApply.ts`** (`FALLBACK_ARBOR_MODELS` / `FALLBACK_ARBOR_INTERNAL_NAMES`); firmware picks the driver from a **local** id vector in **`control-spindle.g`** (not `key=global`). Defaults for address/baud stay in **`sys/arborctl-vars.g`**. Current entries include Shihlin, Huanyang, Yalang, Manual Modbus (experimental), TH Servo (preliminary), and **H100**. Each has **`config.g`**, **`control.g`**, and usually **`settings.g`** under **`macro/private/<internal-name>/`** (installed to **`0:/sys/arborctl/`**). Registers, function codes, and scales: **[doc/vfd-modbus-maps.md](doc/vfd-modbus-maps.md)**.
 
 ---
 
@@ -71,13 +72,13 @@ The **ArborCTL** panel is the canonical configuration UI. It edits **`arborctl-u
 
 ## Releases and packaging
 
-**Official downloads are the DWC plugin ZIP only:** [**GitHub Releases**](https://github.com/MillenniumMachines/ArborCTL/releases), asset **`ArborCTL-<version>.zip`** (Vue UI + embedded **`sd/`** tree: `sys/`, `sys/arborctl/`, gcodes, macros). Users install it through DWC **System → Files** upload.
+**Official downloads are the DWC plugin ZIP only:** [**GitHub Releases**](https://github.com/MillenniumMachines/ArborCTL/releases), asset **`ArborCTL-<version>.zip`** (Vue UI + embedded **`sd/`** tree: `sys/`, `sys/arborctl/`, numbered metas as `*.install`, macros). Users install it through DWC **System → Files** upload. When upgrading an existing install, pause the daemon first (ArborCTL panel **Pause daemon**, or `M98 P"arborctl/prepare-plugin-update.g"`) so DSF can replace open files such as `M2604.g` — see [doc/dwc-plugin.md](doc/dwc-plugin.md).
 
 ### GitHub Releases (CI)
 
 - Workflow: **[`.github/workflows/release.yml`](.github/workflows/release.yml)**.
-- **Trigger:** push a **git tag** matching **`v*`** (e.g. **`v0.2.0`**).
-- **Action:** clones **DuetWebControl `v3.7.0-beta.1`**, runs **`npm install`**, runs **[`dist/build-dwc-plugin.sh`](dist/build-dwc-plugin.sh)**, uploads **`dist/ArborCTL-<version>.zip`** to a **published** GitHub Release (not draft) with generated release notes.
+- **Trigger:** push a **semver git tag** (`vMAJOR.MINOR.PATCH`, `v…-beta.N`, or `v…-rcN`, e.g. **`v0.2.0`**). Other `v*` tags are rejected by [`dist/verify-release-tag.sh`](dist/verify-release-tag.sh).
+- **Action:** clones **DuetWebControl `v3.7.0-beta.1`**, runs **`npm install`**, resolves the version from the tag ([`dist/resolve-build-version.sh`](dist/resolve-build-version.sh)), runs **[`dist/build-dwc-plugin.sh`](dist/build-dwc-plugin.sh)** (no version argument), uploads **`dist/ArborCTL-<semver>.zip`** to a **published** GitHub Release (not draft) with generated release notes.
 
 **Publish a release:**
 
@@ -86,21 +87,24 @@ git tag v0.2.0
 git push origin v0.2.0
 ```
 
-Use a **semver** tag. **Pre-releases:** create a pre-release in the GitHub UI after the workflow runs, or use a tag like `v0.2.0-rc1` and adjust release metadata as needed.
+Use a **semver** tag. **Pre-releases:** `v0.2.0-rc1` or `v0.2.0-beta.1` (CI still publishes; mark as pre-release in the GitHub UI if needed).
 
 ### Manual build (maintainers)
 
 Requires a **DuetWebControl** checkout with **`npm install`** (DWC **3.7.x**; `plugin.json` uses `dwcVersion: "auto"` so the ZIP stamps the exact host version). Node **^20.19 or ≥22.12**. Use Git Bash / WSL on Windows.
 
+Version is **not** a CLI argument — it comes from git tags (exact tag on HEAD, otherwise the nearest tag). On an untagged commit the ZIP is `ArborCTL-<semver>-<sha>[-dirty].zip`.
+
 ```bash
 cd /path/to/ArborCTL
-bash dist/build-dwc-plugin.sh /path/to/DuetWebControl v0.2.0
-# Output: dist/ArborCTL-0.2.0.zip
+bash dist/build-dwc-plugin.sh /path/to/DuetWebControl
+# On tag v0.2.0: dist/ArborCTL-0.2.0.zip
+# Untagged:      dist/ArborCTL-0.2.0-<sha>[-dirty].zip
 ```
 
 ### `dist/` folder
 
-- **`dist/ArborCTL-<version>.zip`** is a local build output for maintainers.
+- **`dist/ArborCTL-<semver>.zip`** (or `…-<sha>[-dirty].zip` off-tag) is a local build output for maintainers.
 - End users should download from **GitHub Releases** (canonical location).
 
 ---
@@ -109,7 +113,7 @@ bash dist/build-dwc-plugin.sh /path/to/DuetWebControl v0.2.0
 
 - **Firmware / macros:** edit **`sys/`**, **`macro/`**; test on hardware or the Duet simulator where applicable.
 - **Plugin:** edit **`dwc-plugin/dwc-src/`**; sync into a DWC tree for `npm run dev`.
-- **Version string:** `%%ARBORCTL_VERSION%%` in **`sys/arborctl.g`** and packaged files is replaced at build/release time.
+- **Version string:** `%%ARBORCTL_VERSION%%` in **`sys/arborctl.g`** and packaged files is replaced at build/release time from the resolved git tag (no leading `v`).
 
 ---
 

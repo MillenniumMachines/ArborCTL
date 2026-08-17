@@ -22,7 +22,12 @@ if { var.spindleModel == null || var.spindleChannel == null || var.spindleAddr =
     echo { "ArborCtl: Incomplete VFD config for spindle " ^ param.S ^ "." }
     M99
 
-var modelFile = { "arborctl/" ^ global.arborModelInternalNames[var.spindleModel] ^ "/control.g" }
+; Driver folder ids (local; not global OM). Index must match arborctlApply.ts.
+var nxtIds = { "shihlin-sl3", "huanyang-hy02d223b", "yalang-yl620a", "modbus-manual-experimental", "th-servo", "h100" }
+if { var.spindleModel < 0 || var.spindleModel >= #var.nxtIds }
+    echo { "ArborCtl: Unknown VFD type index " ^ var.spindleModel ^ " for spindle " ^ param.S ^ "." }
+    M99
+var modelFile = { "arborctl/" ^ var.nxtIds[var.spindleModel] ^ "/control.g" }
 
 ; Skip communication if the VFD has not been probed successfully.
 ; M260.4 (Huanyang) throws unrecoverable errors on timeout, so we

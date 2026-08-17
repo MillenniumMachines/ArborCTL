@@ -16,18 +16,20 @@ if { !exists(param.C) }
 if { !exists(param.S) }
     abort { "ArborCtl: TH Servo - No spindle specified!" }
 
-M575 P{param.C} B{param.B} S7
+if { exists(param.U) && exists(param.F) && exists(param.R) }
+    M98 P"arborctl/check-motor-nameplate.g" U{param.U} F{param.F} R{param.R}
 
-; Probe motor speed register (4096 / 0x1000) — same read as control.g
-M98 P"arborctl/delay-for-command.g"
-M2601 E0 P{param.C} A{param.A} F3 R{4096} B1
-if { global.arborRetVal == null }
+; Pause daemon polling while config / probe runs.
+if { exists(global.arborVFDCommReady) }
+    set global.arborVFDCommReady[param.S] = false
+
+; Probe motor speed register (4096 / 0x1000) — channel fallback C,2,3,1
+M98 P"arborctl/uart-channel-probe.g" B{param.B} C{param.C} A{param.A} R{4096} S{param.S} W{250}
+if { global.arborProbeChannel == null || global.arborRetVal == null }
     echo { "ArborCtl: TH Servo (preliminary) - probe read failed on register 4096" }
-    if { exists(global.arborVFDCommReady) }
-        set global.arborVFDCommReady[param.S] = false
     M99
 
-echo { "ArborCtl: TH Servo (preliminary) - probe OK on register 4096" }
+echo { "ArborCtl: TH Servo (preliminary) - probe OK on register 4096 channel P" ^ global.arborProbeChannel }
 
 if { exists(global.arborVFDCommReady) }
     set global.arborVFDCommReady[param.S] = true

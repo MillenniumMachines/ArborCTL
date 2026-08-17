@@ -1,6 +1,6 @@
-; huanyang-quick-probe.g - Same first-step probe as huanyang-hy02d223b/config.g (M2604 raw frame)
+; huanyang-quick-probe.g - Same probe as huanyang-hy02d223b/config.g (M2604 raw frame)
 ;
-; Huanyang does not use a simple FC3 read for initial probe; this matches config.g.
+; Tries preferred channel C, then P2, P3, P1. Huanyang does not use FC3 for initial probe.
 ; Parameters: B baud, C UART channel, A slave address.
 
 if { !exists(param.B) }
@@ -12,19 +12,46 @@ if { !exists(param.C) }
 if { !exists(param.A) }
     abort { "ArborCtl: huanyang-quick-probe - No address (A)!" }
 
-M575 P{param.C} B{param.B} S7
+if { !exists(global.arborProbeChannel) }
+    global arborProbeChannel = null
+else
+    set global.arborProbeChannel = null
 
-M98 P"arborctl/delay-for-command.g"
+set global.arborRetVal = null
 
-set global.arborRetVal = { null }
+var prefChannel = { param.C }
+var probeOk = false
+var workChannel = { param.C }
 
-; Function 0x04 read — same as arborctl/huanyang-hy02d223b/config.g probe
-M2604 P{param.C} A{param.A} B{{0x04, 0x03, 0x00, 0x00, 0x00}} R5
+var channelCandidates = { vector(4, 0) }
+set var.channelCandidates[0] = var.prefChannel
+set var.channelCandidates[1] = 2
+set var.channelCandidates[2] = 3
+set var.channelCandidates[3] = 1
 
-G4 P250
+var probeIdx = 0
+while { var.probeIdx < #var.channelCandidates && !var.probeOk }
+    var tryChannel = { var.channelCandidates[var.probeIdx] }
+    if { var.probeIdx > 0 && var.tryChannel == var.prefChannel }
+        set var.probeIdx = { var.probeIdx + 1 }
+        continue
 
-if { global.arborRetVal != null && #global.arborRetVal == 5 }
-    echo { "ArborCtl: Huanyang probe OK (5-byte response)." }
+    M575 P{var.tryChannel} B{param.B} S7
+    M98 P"arborctl/delay-for-command.g" S250
+    set global.arborRetVal = { null }
+    M2604 P{var.tryChannel} A{param.A} B{{0x04, 0x03, 0x00, 0x00, 0x00}} R5
+    G4 P250
+
+    if { global.arborRetVal != null && #global.arborRetVal == 5 }
+        set var.probeOk = true
+        set var.workChannel = var.tryChannel
+
+    set var.probeIdx = { var.probeIdx + 1 }
+
+if { !var.probeOk }
+    set global.arborProbeChannel = null
+    echo { "ArborCtl: Huanyang probe FAILED (check baud, address, AUX port, wiring)." }
     M99
 
-echo { "ArborCtl: Huanyang probe FAILED (check baud, address, AUX port, wiring)." }
+set global.arborProbeChannel = var.workChannel
+echo { "ArborCtl: Huanyang probe OK (5-byte response) on channel P" ^ var.workChannel }

@@ -1,7 +1,7 @@
 ; delay-for-command.g - ArborCtl RS485 communication delay
 ; This file delays for long enough to account for the VFDs maximum RS485 command rate
 
-var cmdWait = { (exists(param.S) && param.S !== null) ? param.S : 10 }
+var cmdWait = { (exists(param.S) && param.S !== null) ? param.S : 100 }
 
 if { !exists(global.arborLast485Send) }
     global arborLast485Send = { 0 }

@@ -14,6 +14,8 @@
 ; F - Motor rated frequency (Hz)
 ; I - Motor rated current (A)
 ; R - Motor rated rotation speed (RPM)
+; J - Acceleration time (seconds)
+; K - Deceleration time (seconds)
 ; D - Reset to factory defaults (1) or not (0)
 
 if { !exists(param.A) }
@@ -61,28 +63,36 @@ if { !exists(param.I) }
 if { !exists(param.R) }
     abort { "ArborCtl: Yalang YL620-A - No motor rotation speed specified!" }
 
+M98 P"arborctl/check-motor-nameplate.g" U{param.U} F{param.F} R{param.R}
+
+if { !exists(param.J) || param.J <= 0 }
+    abort { "ArborCtl: Yalang YL620-A - Accel time (J) must be positive!" }
+
+if { !exists(param.K) || param.K <= 0 }
+    abort { "ArborCtl: Yalang YL620-A - Decel time (K) must be positive!" }
 
 ; Load the settings file which will define global.yl620aConfigParams
-M98 P"arborctl/yalang-yl620a/settings.g" W{param.W} U{param.U} V{param.V} F{param.F} I{param.I} R{param.R} T{param.T} E{param.E}
+M98 P"arborctl/yalang-yl620a/settings.g" W{param.W} U{param.U} V{param.V} F{param.F} I{param.I} R{param.R} T{param.T} E{param.E} J{param.J} K{param.K}
 
 var waitTime = 250
 
-; Configure serial port with the selected baud rate
-M575 P{param.C} B{param.B} S7
+; Pause daemon polling while config / probe runs.
+if { exists(global.arborVFDCommReady) }
+    set global.arborVFDCommReady[param.S] = false
 
+var commChannel = { param.C }
 var vfdModelDetected = { null }
 
 var reset = { exists(param.D) && param.D == 1 }
 
 while { var.vfdModelDetected == null }
-    ; Check if the VFD is powered on and responding
-    M2601 E0 P{param.C} A{param.A} F3 R{global.yl620aSpecialParams[0][0]} B1
+    ; FC3 probe with UART channel fallback (preferred C, then 2, 3, 1)
+    M98 P"arborctl/uart-channel-probe.g" B{param.B} C{param.C} A{param.A} R{global.yl620aSpecialParams[0][0]} S{param.S} W{var.waitTime}
     var vfdModel = { global.arborRetVal }
 
-    if { var.vfdModel != null && var.vfdModel[0] != 0 }
+    if { global.arborProbeChannel != null && var.vfdModel != null && var.vfdModel[0] != 0 }
         set var.vfdModelDetected = { var.vfdModel[0] }
-        if { exists(global.arborVFDCommReady) }
-            set global.arborVFDCommReady[param.S] = true
+        set var.commChannel = global.arborProbeChannel
     else
         M291 P"Unable to communicate with VFD. Your VFD may need to be configured for Modbus communication.<br/><br/>Would you like guidance on how to configure your VFD?" R"ArborCtl: Yalang YL620-A Setup" S4 T0 K{"Yes, guide me", "No, skip and retry"} F0 J2
         if { result == -1 }
@@ -150,7 +160,7 @@ while { iterations < #global.yl620aConfigParams }
     ; Write batch of parameters using Modbus command - pass values vector directly to B parameter
     while { iterations < #var.values }
         echo { "ArborCtl: Yalang YL620-A - Writing parameter " ^ (iterations + 1) ^ ": " ^ var.values[iterations] }
-        M2600 E0 P{param.C} A{param.A} F6 R{var.startAddr + iterations} B{var.values[iterations]}
+        M2600 E0 P{var.commChannel} A{param.A} F6 R{var.startAddr + iterations} B{var.values[iterations]}
 
     ; Verify values were set correctly by reading them back
     var allCorrect = true
@@ -159,7 +169,7 @@ while { iterations < #global.yl620aConfigParams }
     ; We must read these one-by-one as reading multiple bytes seems to return
     ; incorrect values for certain registers.
     while { iterations < #var.values }
-        M2601 E0 P{param.C} A{param.A} F3 R{var.startAddr + iterations} B1
+        M2601 E0 P{var.commChannel} A{param.A} F3 R{var.startAddr + iterations} B1
         var readValue = { global.arborRetVal }
         if { var.readValue == null || #var.readValue != 1 }
             echo { "ArborCtl: Yalang YL620-A - Readback failed for parameter " ^ (iterations + 1) ^ ": expected " ^ var.values[iterations] }
@@ -192,6 +202,9 @@ else
     ; Restart the VFD to apply settings if requested
     if { global.yl620aSpecialParams[2][0] != null && global.yl620aSpecialParams[2][1] != null }
         M291 P"Configuration complete. Restarting VFD to apply settings..." R"ArborCtl: Yalang YL620-A" S0 T5
-        M2600 E0 P{param.C} A{param.A} F6 R{global.yl620aSpecialParams[2][0]} B{global.yl620aSpecialParams[2][1]}
+        M2600 E0 P{var.commChannel} A{param.A} F6 R{global.yl620aSpecialParams[2][0]} B{global.yl620aSpecialParams[2][1]}
     else
         M291 P"Configuration complete.  Restart your VFD to apply settings.  Press okay once complete" R"ArborCtl: Yalang YL620-A" S2 T0
+
+if { exists(global.arborVFDCommReady) }
+    set global.arborVFDCommReady[param.S] = true

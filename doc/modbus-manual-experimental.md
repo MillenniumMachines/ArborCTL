@@ -1,5 +1,7 @@
 # Manual Modbus (experimental)
 
+See also the catalog of all ArborCTL drive maps: [vfd-modbus-maps.md](vfd-modbus-maps.md).
+
 This driver is for **VFDs or servo-style drives** that speak **Modbus RTU holding registers** (function 3 read / function 6 write single register) but are **not** covered by the built-in Shihlin / Huanyang / Yalang presets. It pairs with the same **wizard motor data**, **Hz limits**, **M575 UART**, and **comm-ready** behaviour as the rest of ArborCTL.
 
 If you maintain a **separate “servo” branch** locally, merge or cherry-pick these files and extend `arborModbusManualSpec` or fork `modbus-manual-experimental/control.g` for vendor-specific command sequencing.

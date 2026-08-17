@@ -1,5 +1,6 @@
 ; h100/control.g - H100 VFD implementation (standard Modbus RTU)
 ; FluidNC register map: FC5 coils for run/stop, FC6 for frequency, FC4 for readback.
+; FC4 at 0x0000 also carries current/voltage/power (V1.8 input-register table).
 ;
 ; M2600 verifies with FC3 — do not use it for FC5 coil writes.
 
@@ -11,6 +12,8 @@ if { !exists(param.C) }
 
 if { !exists(param.S) }
     abort { "ArborCtl: No spindle specified!" }
+
+M98 P"arborctl/delay-for-command.g" S250
 
 M98 P"arborctl/h100/settings.g"
 
@@ -77,9 +80,15 @@ var wasRunning = { global.arborVFDStatus[param.S] != null ? global.arborVFDStatu
 if { !var.shouldRun && !var.wasRunning }
     M99
 
-; Read output frequency (FC4, 2 input regs). First word = running freq (deci-Hz).
-M2601 E0 P{param.C} A{param.A} F4 R{global.h100ReadFreqAddr} B2
+; FC4 monitor block at 0x0000 (Hz, set Hz, current, …, power at 000C).
+var fc4n = { global.h100Fc4Count[param.S] }
+M2601 E0 P{param.C} A{param.A} F4 R{global.h100ReadFreqAddr} B{var.fc4n}
 var freqWords = { global.arborRetVal }
+var needFc4Fallback = { var.freqWords == null || #var.freqWords < 1 }
+if { var.needFc4Fallback && var.fc4n > 2 }
+    set global.h100Fc4Count[param.S] = 2
+    M2601 E0 P{param.C} A{param.A} F4 R{global.h100ReadFreqAddr} B2
+    set var.freqWords = { global.arborRetVal }
 
 if { var.freqWords == null || #var.freqWords < 1 }
     echo { "ArborCtl: H100 stopped responding to inputs." }
@@ -111,10 +120,14 @@ if { !var.shouldRun && var.vfdRunning }
     set var.vfdRunning = false
     set var.lastDir = 0
 elif { var.shouldRun }
-    ; f = RPM * poles / 120 ; store as deci-Hz
-    var newFreq = { ceil(min(var.maxFreq, max(var.minFreq, (abs(spindles[param.S].current) * var.numPoles) / 120))) * 10 }
+    ; f = |RPM| * poles / 120 ; store as deci-Hz
+    var cmdRpm = { abs(spindles[param.S].active) }
+    var targetHz = { min(var.maxFreq, max(var.minFreq, (var.cmdRpm * var.numPoles) / 120)) }
+    var newFreq = { ceil(var.targetHz) * 10 }
 
     if { var.vfdSetDeciHz != var.newFreq }
+        echo { "ArborCtl: Setting spindle " ^ param.S ^ " to " ^ var.targetHz ^ " Hz" }
+        echo { "ArborCtl: poles=" ^ var.numPoles ^ " cmdRPM=" ^ var.cmdRpm }
         M2600 E0 P{param.C} A{param.A} F6 R{global.h100SetFreqAddr} B{var.newFreq,}
         set var.commandChange = true
 
@@ -137,12 +150,15 @@ elif { var.shouldRun }
 
 ; RPM = 120 * f / poles
 var currentRPM = { var.currentFrequency * 120 / var.numPoles }
-var targetHz = { abs(spindles[param.S].current) * var.numPoles / 120 }
-var isStable = { var.vfdRunning && abs(var.currentFrequency - var.targetHz) < 1.0 }
+var stableHz = { abs(spindles[param.S].active) * var.numPoles / 120 }
+var isStable = { var.vfdRunning && abs(var.currentFrequency - var.stableHz) < 1.0 }
 
 set global.arborState[param.S][2] = { global.arborVFDStatus[param.S] != null ? global.arborVFDStatus[param.S][4] : false }
 set global.arborState[param.S][1] = { var.commandChange }
 set global.arborState[param.S][4] = false
+; 000A current fault (word 10) — pause-on-error like Shihlin/Yalang
+if { #var.freqWords >= 11 && var.freqWords[10] > 0 }
+    set global.arborState[param.S][4] = true
 
 set global.arborVFDStatus[param.S][0] = { var.vfdRunning }
 set global.arborVFDStatus[param.S][1] = { var.vfdRunning ? var.lastDir : 0 }
@@ -150,6 +166,27 @@ set global.arborVFDStatus[param.S][2] = { var.currentFrequency }
 set global.arborVFDStatus[param.S][3] = { var.currentRPM }
 set global.arborVFDStatus[param.S][4] = { var.isStable }
 
-; No power register on FluidNC H100 map — leave watts at 0, load at 0
+; Load from FC4 current (0.1 A) / AC V (0.1 V); native 000C power if plausible.
+; Short replies (2 words) keep watts/load at 0.
 set global.arborVFDPower[param.S][0] = 0
 set global.arborVFDPower[param.S][1] = 0
+if { var.vfdRunning && #var.freqWords >= 3 }
+    var outputCurrent = { var.freqWords[2] / 10 }
+    var acVoltage = { global.arborState[param.S][0][2] }
+    if { #var.freqWords >= 6 && var.freqWords[5] > 0 }
+        set var.acVoltage = { var.freqWords[5] / 10 }
+    var ratedW = { global.arborState[param.S][0][0] * 1000 }
+    var pwrWatts = { sqrt(3) * var.acVoltage * var.outputCurrent * 0.8 }
+    if { #var.freqWords >= 13 && var.freqWords[12] > 0 && var.pwrWatts > 0 }
+        var nPwr = { var.freqWords[12] * 100 }
+        if { var.nPwr > var.ratedW * 2 }
+            set var.nPwr = { var.freqWords[12] }
+        var nLo = { var.pwrWatts * 0.25 }
+        var nHi = { var.ratedW * 2 }
+        var nativeOk = { var.nPwr >= var.nLo && var.nPwr <= var.nHi }
+        if { var.nativeOk }
+            set var.pwrWatts = { var.nPwr }
+    set global.arborVFDPower[param.S][0] = { var.pwrWatts }
+    if { var.ratedW > 0 }
+        var loadPct = { min((var.pwrWatts / var.ratedW) * 100, 100) }
+        set global.arborVFDPower[param.S][1] = { var.loadPct }
