@@ -73,7 +73,7 @@ var vfdResponding = { false }
 
 while { !var.vfdResponding }
     ; Probe F005 (max frequency) via FC3 — channel fallback C,2,3,1
-    M98 P"arborctl/uart-channel-probe.g" B{param.B} C{param.C} A{param.A} R{global.h100MaxFreqAddr} S{param.S} W{var.waitTime}
+    M98 P"arborctl/uart-channel-probe.g" B{param.B} C{param.C} A{param.A} R5 S{param.S} W{var.waitTime}
     var maxFreqRaw = { global.arborRetVal }
 
     if { global.arborProbeChannel != null && var.maxFreqRaw != null && #var.maxFreqRaw == 1 }
@@ -117,6 +117,7 @@ set global.arborWizardFreqLimits[param.S] = { param.T, param.E }
 ; Clear cached VFD state so control.g reloads limits
 set global.arborState[param.S][0] = null
 set global.arborState[param.S][3] = null
+set global.h100Fc4Count[param.S] = 2
 
 if { exists(global.arborVFDCommReady) }
     set global.arborVFDCommReady[param.S] = true

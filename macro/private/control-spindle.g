@@ -72,4 +72,4 @@ var spindleLoad = { global.arborVFDPower[param.S] != null ? global.arborVFDPower
 if { var.vfdRunning && var.isStable && var.spindleLoad > global.arborMaxLoad }
     var speedFactor = { move.speedFactor * 0.95 }
     echo { "ArborCtl: Spindle load is " ^ var.spindleLoad ^ "% - reducing feed to " ^ var.speedFactor * 100 ^ "% to counteract" }
-    M220 S{var.speedFactor}
+    M220 S{var.speedFactor * 100}

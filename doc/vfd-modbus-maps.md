@@ -226,11 +226,13 @@ Standard Modbus RTU. FluidNC-compatible coils + frequency; V1.8 **input-register
 | 74 | `0x004A` | 5 | W | coil on | Reverse |
 | 75 | `0x004B` | 5 | W | coil on | Stop |
 | 513 | `0x0201` | 6 | W | Hz × 10 (deci-Hz) | Set frequency (**F169** = 1 vs 2 decimals) |
-| 0 | `0x0000` | 4 | R | See FC4 table | Monitor block (count 13; fail-soft to 2) |
+| 0 | `0x0000` | 4 | R | See FC4 table | Monitor (FluidNC **B2**; optional wider) |
 | 5 | `0x0005` | 3 | R | deci-Hz | F005 max Hz (config + Test Modbus) |
 | 11 | `0x000B` | 3 | R | deci-Hz | F011 min Hz |
 
-FC4 starting at **`0x0000`** (up to 13 words, `0000`–`000C`):
+Frequency set is **`M260.1` FC6** (not `M2600` — FC3 verify of `0x0201` fails on H100). Coils are **`M260.1` FC5**.
+
+FC4 starting at **`0x0000`** (FluidNC uses 2 words; V1.8 docs list through `000C`):
 
 | Offset | Name | Scale | ArborCTL use |
 |-------:|------|-------|--------------|
@@ -245,6 +247,6 @@ FC4 starting at **`0x0000`** (up to 13 words, `0000`–`000C`):
 | 11 | Operating hours | — | Unused |
 | 12 | Output power (`000C`) | see notes | Watts if plausible vs V×I |
 
-Watts = `√3 × Vac × I × 0.8` unless native `000C` is consistent with that estimate (try ×100 as 0.1 kW, else raw watts). Load % = watts / nameplate kW, capped at 100. Stopped spindle or a **short reply** (2 frequency words only, or clone that rejects count 13) leaves `{0, 0}`. Frequency control still uses word 0.
+Watts = `√3 × Vac × I × 0.8` unless native `000C` is consistent with that estimate (try ×100 as 0.1 kW, else raw watts). Load % = watts / nameplate kW when that estimate is positive; else **I / rated A**. Default FC4 is **2 words**; when running, a supplemental **`R2 B4`** supplies current/AC V. Stopped spindles leave power/load at 0.
 
 Config stores wizard `arborMotorSpec` / `arborWizardFreqLimits`; it does not write motor PDs over Modbus. Probe: FC3 `@ 0x0005`.

@@ -3,13 +3,11 @@
 ; It attempts communication up to 3 times before giving up
 M98 P"arborctl/delay-for-command.g"
 
-set global.arborRetVal = { null }
+set global.arborRetVal = null
 
-while {iterations < global.arborMaxRetries}
-
-    M261.1 P{param.P} A{param.A} F{param.F} R{param.R} B{param.B} V"val"
-    if { var.val != null }
-        set global.arborRetVal = { var.val }
+while { iterations < global.arborMaxRetries }
+    M98 P"arborctl/modbus-read-once.g" S{param.P} A{param.A} F{param.F} R{param.R} B{param.B}
+    if { global.arborRetVal != null }
         M99
 
 if { !exists(param.E) || param.E == 1 }

@@ -49,7 +49,17 @@ FC4 starting at `0x0000` (H100 V1.8 input-register table):
 | `000A` | Current fault | Sets `arborState` error if non-zero |
 | `000C` | Output power | Used for watts when the value is plausible vs the V×I estimate |
 
-`arborVFDPower` is `{ watts, loadPercent }`. Watts are `sqrt(3)×Vac×I×0.8` (same form as Huanyang) unless native `000C` looks consistent with that estimate (0.1 kW units ×100, or raw watts if ×100 exceeds 2× nameplate). Load % is watts / nameplate kW. Stopped spindles and **short replies** (clones that only return the FluidNC 2 frequency words, or that reject the long read) leave power/load at 0; frequency control still uses word 0.
+`arborVFDPower` is `{ watts, loadPercent }`. Watts are `sqrt(3)×Vac×I×0.8` (same form as Huanyang) unless native `000C` looks consistent with that estimate (0.1 kW units ×100, or raw watts if ×100 exceeds 2× nameplate). Load % is watts / nameplate kW when that estimate is positive; otherwise **I / rated current** from the wizard nameplate. Stopped spindles leave power/load at 0.
+
+### FC4 read strategy (load vs frequency)
+
+FluidNC reads **2 words** (`R0 B2`) for Hz/RPM. Many clones reject longer FC4 blocks; each failed `M261.1` prints an empty `Error: M261.1:` in the console (RRF, not ArborCTL). The driver:
+
+1. Uses `global.h100Fc4Count[S]` (default **2**). If a non-2 cached width fails, falls back to **B2** and latches it.
+2. When at **2 words** and the spindle is running, adds **FC4 `R2 B4`** for current (`0002`) and AC V (`0005`).
+3. Resets `h100Fc4Count[S]` to **2** on H100 config / Apply.
+
+**Validation:** With the spindle running under load, DWC telemetry should show **Power > 0** and **Load %** moving. Compare keypad SHIFT output current to the estimated load. Deploy updated `h100/control.g` plus `M2601.g` / `modbus-read-once.g` (`apply-sys-gcodes.g` or reboot).
 
 **Test Modbus** in the DWC plugin uses FC3 on register `5` (F005).
 
@@ -62,5 +72,5 @@ FC4 starting at `0x0000` (H100 V1.8 input-register table):
 ## Notes
 
 - Coil writes use **`M260.1 F5`** directly. ArborCTL’s `M2600` verify path reads back with FC3 and is unsuitable for coils.
-- Frequency writes use **`M2600` F6** (verified holding-register write).
+- Frequency writes use **`M260.1 F6`** (no FC3 verify — register `0x0201` is write-focused on H100; `M2600` would spam `Error: M261.1:`).
 - Current and voltage scales assume **0.1 units** (3.0 A → register 30), matching the keypad monitors. Confirm against SHIFT display on first bring-up; native `000C` power scale varies by clone.
