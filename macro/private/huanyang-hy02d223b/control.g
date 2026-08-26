@@ -236,6 +236,7 @@ set global.arborVFDStatus[param.S][3] = { var.currentRPM }
 set global.arborVFDStatus[param.S][4] = { var.freqStable }
 
 ; Calculate and update power information
+; Load from uncapped estimate; display watts capped to nameplate.
 if { global.arborState[param.S][0] != null }
     var powerFactor = { 0.8 }
     var ratedVoltage = { global.arborState[param.S][0][0][2] }
@@ -243,6 +244,8 @@ if { global.arborState[param.S][0] != null }
 
     var ratedPower = { global.arborState[param.S][0][0][0] * 1000 }
     var loadPercentage = { min((var.outputPower / var.ratedPower) * 100, 100) }
+    if { var.ratedPower > 0 }
+        set var.outputPower = { min(var.outputPower, var.ratedPower) }
 
     set global.arborVFDPower[param.S][0] = { var.outputPower }
     set global.arborVFDPower[param.S][1] = { var.loadPercentage }

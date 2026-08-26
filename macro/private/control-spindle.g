@@ -63,13 +63,4 @@ if { (var.wasStable && !var.isStable && !var.commandChange) || var.errorDetected
     
     M99
 
-
-; Get spindle load if available
-var spindleLoad = { global.arborVFDPower[param.S] != null ? global.arborVFDPower[param.S][1] : 0 }
-
-; If spindle is running and stable, check for load
-; If load is higher than global.arborMaxLoad, reduce the speed factor
-if { var.vfdRunning && var.isStable && var.spindleLoad > global.arborMaxLoad }
-    var speedFactor = { move.speedFactor * 0.95 }
-    echo { "ArborCtl: Spindle load is " ^ var.spindleLoad ^ "% - reducing feed to " ^ var.speedFactor * 100 ^ "% to counteract" }
-    M220 S{var.speedFactor * 100}
+; Spindle load telemetry only — no automatic feed override (see doc/feed-protect-notes.md).

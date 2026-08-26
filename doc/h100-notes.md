@@ -49,7 +49,7 @@ FC4 starting at `0x0000` (H100 V1.8 input-register table):
 | `000A` | Current fault | Sets `arborState` error if non-zero |
 | `000C` | Output power | Used for watts when the value is plausible vs the V×I estimate |
 
-`arborVFDPower` is `{ watts, loadPercent }`. Watts are `sqrt(3)×Vac×I×0.8` (same form as Huanyang) unless native `000C` looks consistent with that estimate (0.1 kW units ×100, or raw watts if ×100 exceeds 2× nameplate). Load % is watts / nameplate kW when that estimate is positive; otherwise **I / rated current** from the wizard nameplate. Stopped spindles leave power/load at 0.
+`arborVFDPower` is `{ watts, loadPercent }`. Watts are `sqrt(3)×Vac×I×0.8` (same form as Huanyang) unless native `000C` looks consistent with that estimate (0.1 kW units ×100, or raw watts if ×100 exceeds 2× nameplate) and is ≤ nameplate watts; displayed watts are capped to nameplate (`arborMotorSpec` kW × 1000). Load % is **output current / rated current** from the wizard nameplate, capped at 100 (VFD-style load rate — not the electrical watt estimate). Stopped spindles leave power/load at 0.
 
 ### FC4 read strategy (load vs frequency)
 

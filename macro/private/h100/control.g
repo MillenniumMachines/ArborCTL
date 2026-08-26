@@ -201,15 +201,15 @@ if { var.vfdRunning && var.haveLoadData }
         if { var.nPwr > var.ratedW * 2 }
             set var.nPwr = { var.freqWords[12] }
         var nLo = { var.pwrWatts * 0.25 }
-        var nHi = { var.ratedW * 2 }
+        var nHi = { var.ratedW }
         var nativeOk = { var.nPwr >= var.nLo && var.nPwr <= var.nHi }
         if { var.nativeOk }
             set var.pwrWatts = { var.nPwr }
+    ; Watts = capped electrical estimate; load % = I / rated A (cutting load).
+    if { var.ratedW > 0 && var.pwrWatts > 0 }
+        set var.pwrWatts = { min(var.pwrWatts, var.ratedW) }
+    if { var.outputCurrent > 0 && var.ratedA > 0 }
+        var loadPct = { min((var.outputCurrent / var.ratedA) * 100, 100) }
+        set global.arborVFDPower[param.S][1] = { var.loadPct }
     if { var.pwrWatts > 0 }
         set global.arborVFDPower[param.S][0] = { var.pwrWatts }
-    if { var.pwrWatts > 0 && var.ratedW > 0 }
-        var loadPct = { min((var.pwrWatts / var.ratedW) * 100, 100) }
-        set global.arborVFDPower[param.S][1] = { var.loadPct }
-    elif { var.pwrWatts <= 0 && var.outputCurrent > 0 && var.ratedA > 0 }
-        var loadPctI = { min((var.outputCurrent / var.ratedA) * 100, 100) }
-        set global.arborVFDPower[param.S][1] = { var.loadPctI }

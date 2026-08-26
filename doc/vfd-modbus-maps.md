@@ -28,7 +28,7 @@ Helpers:
 | `M260.1 F5` | Coil write (H100 run/stop). Do not use `M2600` — it verifies with FC3 |
 | `M2604` | Huanyang **custom** frames (not FC3/FC6) |
 
-`loadPercent` compared to `global.arborMaxLoad` (default 80) in [`macro/private/control-spindle.g`](../macro/private/control-spindle.g) can reduce feed (`M220`).
+`loadPercent` is driver-defined telemetry only. Automatic feed override via daemon `M220` is **disabled**; see [feed-protect-notes.md](feed-protect-notes.md). `global.arborMaxLoad` (default 80) is a reserved threshold for future spindle protection.
 
 ---
 
@@ -102,7 +102,7 @@ Apply also writes CU mode, EEPROM, acc/dec, DC brake, comm retries, etc. Full li
 | `0x03` | `0x01, 0x11` | — | Reverse |
 | `0x03` | `0x01, 0x08` | — | Stop |
 
-Direction is **command-tracked** (status frames do not report dir). Watts = `√3 × ratedV × I × 0.8`. Load % = watts / nameplate kW, capped at 100.
+Direction is **command-tracked** (status frames do not report dir). Watts = `√3 × ratedV × I × 0.8`, capped to nameplate kW×1000. Load % = uncapped estimate / nameplate kW, capped at 100.
 
 ### Config PD writes (settings.g, cmd `0x02`)
 
@@ -247,6 +247,6 @@ FC4 starting at **`0x0000`** (FluidNC uses 2 words; V1.8 docs list through `000C
 | 11 | Operating hours | — | Unused |
 | 12 | Output power (`000C`) | see notes | Watts if plausible vs V×I |
 
-Watts = `√3 × Vac × I × 0.8` unless native `000C` is consistent with that estimate (try ×100 as 0.1 kW, else raw watts). Load % = watts / nameplate kW when that estimate is positive; else **I / rated A**. Default FC4 is **2 words**; when running, a supplemental **`R2 B4`** supplies current/AC V. Stopped spindles leave power/load at 0.
+Watts = `√3 × Vac × I × 0.8` unless native `000C` is consistent with that estimate and ≤ nameplate (try ×100 as 0.1 kW, else raw watts); displayed watts capped to nameplate. Load % = **I / rated A**, capped at 100. Default FC4 is **2 words**; when running, a supplemental **`R2 B4`** supplies current/AC V. Stopped spindles leave power/load at 0.
 
 Config stores wizard `arborMotorSpec` / `arborWizardFreqLimits`; it does not write motor PDs over Modbus. Probe: FC3 `@ 0x0005`.

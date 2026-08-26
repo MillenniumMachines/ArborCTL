@@ -40,8 +40,9 @@
                 <p class="text-caption text-medium-emphasis mb-2">
                     From <code>arborVFDStatus</code> / <code>arborVFDPower</code> (daemon polling). Load % is
                     driver-defined (e.g. VFD power estimate, H100 FC4 current/power, servo register, or 0).
-                    Feed protect when load &gt;
-                    <b>{{ arborMaxLoadDisplay }}%</b> (<code>global.arborMaxLoad</code>).
+                    Automatic feed override is disabled.
+                    <code>global.arborMaxLoad</code> (<b>{{ arborMaxLoadDisplay }}%</b>) is a reserved threshold
+                    for future spindle protection (feed % strategy, not daemon <code>M220</code>).
                 </p>
                 <v-table v-if="telemetryRows.length > 0" density="compact">
                     <thead>

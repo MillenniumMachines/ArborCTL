@@ -11,7 +11,8 @@ global arborRetVal = { null }
 ; Last successful UART device from uart-channel-probe.g (null = probe failed)
 global arborProbeChannel = null
 
-; Maximum load percentage before triggering overload condition 
+; Reserved overload threshold (%) for future spindle protection — not applied today.
+; See doc/feed-protect-notes.md (no daemon M220 feed override).
 global arborMaxLoad = 80
 
 ; Maximum number of retries for RS485 communication commands

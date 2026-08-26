@@ -34,7 +34,7 @@ The panel reads **user globals** from `state.machine.model.global` (with a fallb
 | `arborVFDStatus` | Per-spindle `{ running, dir, Hz, RPM, stable }` |
 | `arborVFDPower` | Per-spindle `{ watts, loadPercent }` — meaning depends on driver |
 | `arborVFDCommReady` | Per-spindle comm gate after successful config probe |
-| `arborMaxLoad` | Threshold (%) for overload feed logic in `control-spindle.g` |
+| `arborMaxLoad` | Reserved overload threshold (%); not applied — see [feed-protect-notes.md](feed-protect-notes.md) |
 | `arborctlDaemonEnabled` | Runtime poll gate; `false` while paused for plugin update |
 
 Until you connect to a board, many fields are empty; the form still renders.
