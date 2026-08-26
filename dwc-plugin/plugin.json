@@ -11,7 +11,7 @@
         "rs485",
         "cnc"
     ],
-    "dwcVersion": "auto",
+    "dwcVersion": "auto-minor",
     "dwcDependencies": [],
     "rrfVersion": "auto-major",
     "sbcPermissions": [],
